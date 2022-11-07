@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Avg, Count, Min, Sum
 
 POST_TYPE = (('1', 'статья'), ('2', 'новость'))
 
@@ -8,13 +9,14 @@ class Author(models.Model):
     user = models.OneToOneField(User, on_delete=models.DO_NOTHING) # cвязь «один к одному» с встроенной моделью пользователей User;
     rating = models.IntegerField(default=0) # рейтинг пользователя.
 
-    def update_rating(self, cnt):
-        self.save()
-    # Метод update_rating() модели Author, который обновляет рейтинг пользователя, переданный в аргумент этого метода.
-    # Он состоит из следующего:
-    # суммарный рейтинг каждой статьи автора умножается на 3;
-    # суммарный рейтинг всех комментариев автора;
-    # суммарный рейтинг всех комментариев к статьям автора.
+    def update_rating(self):
+        if Post.objects.all().exists():
+            cnt1 = Post.objects.filter(author=self).aggregate(rate_sum=Sum('rating')).get('rate_sum') * 3
+            cnt2 = Comment.objects.filter(author=self).aggregate(rate_sum=Sum('rating')).get('rate_sum')
+            cnt3 = 0#Comment.objects.filter(author=self).aggregate(rate_sum=Sum('rating')).get('rate_sum')
+            self.rating = cnt1 + cnt2 + cnt3
+            self.save()
+
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True) # Категории новостей/статей — темы, которые они отражают
@@ -48,7 +50,7 @@ class PostCategory(models.Model):
 
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.DO_NOTHING) # связь «один ко многим» с моделью Post;
-    user = models.ForeignKey(Author, on_delete=models.DO_NOTHING) # связь «один ко многим» со встроенной моделью User (комментарии может оставить любой пользователь, необязательно автор);
+    author = models.ForeignKey(Author, on_delete=models.DO_NOTHING) # связь «один ко многим» со встроенной моделью User (комментарии может оставить любой пользователь, необязательно автор);
     text = models.TextField(null=False) # текст комментария;
     creation = models.DateTimeField(auto_now_add=True) # дата и время создания комментария;
     rating = models.IntegerField(default=0) # рейтинг комментария.
