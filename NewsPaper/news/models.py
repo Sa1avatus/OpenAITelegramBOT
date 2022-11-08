@@ -13,7 +13,7 @@ class Author(models.Model):
         if Post.objects.all().exists():
             cnt1 = Post.objects.filter(author=self).aggregate(rate_sum=Sum('rating')).get('rate_sum') * 3
             cnt2 = Comment.objects.filter(author=self).aggregate(rate_sum=Sum('rating')).get('rate_sum')
-            cnt3 = 0#Comment.objects.filter(author=self).aggregate(rate_sum=Sum('rating')).get('rate_sum')
+            cnt3 = Comment.objects.filter(post__in=Post.objects.filter(author=self)).aggregate(rate_sum=Sum('rating')).get('rate_sum')
             self.rating = cnt1 + cnt2 + cnt3
             self.save()
 
@@ -62,3 +62,9 @@ class Comment(models.Model):
     def dislike(self):
         self.rating -= 1
         self.save()
+
+
+# Вывести username и рейтинг лучшего пользователя (применяя сортировку и возвращая поля первого объекта).
+# Вывести дату добавления, username автора, рейтинг, заголовок и превью лучшей статьи, основываясь на лайках/дислайках к этой статье.
+# Вывести все комментарии (дата, пользователь, рейтинг, текст) к этой статье
+# .order_by('price').values('name', 'price')
