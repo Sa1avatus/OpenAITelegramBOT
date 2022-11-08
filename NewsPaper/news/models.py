@@ -42,6 +42,9 @@ class Post(models.Model):
     def preview(self):
         return f'{self.description[0:124]}...'
 
+    def __str__(self):
+        return f'{self.title}:\n {self.description[:124]}...'
+
 
 class PostCategory(models.Model):
     post = models.ForeignKey(Post, on_delete=models.DO_NOTHING) # связь «один ко многим» с моделью Post;
@@ -62,3 +65,6 @@ class Comment(models.Model):
     def dislike(self):
         self.rating -= 1
         self.save()
+
+    def __str__(self):
+        return f'{self.text}'
