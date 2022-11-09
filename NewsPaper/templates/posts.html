@@ -28,8 +28,8 @@ Posts
                <td>{{ post.creation|date:'d.m.Y' }}</td>
                <td>{{ post.author.user }}</td>
                <td>{{ post.type.name }}</td>
-               <td>{{ post.title }}</td>
-               <td>{{ post.description|truncatewords:20 }}</td>
+               <td>{{ post.title|censor }}</td>
+               <td>{{ post.description|truncatechars:20|censor }}</td>
                <td>{{ post.rating }}</td>
            </tr>
            {% endfor %}

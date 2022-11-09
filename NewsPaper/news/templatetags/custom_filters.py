@@ -1,5 +1,5 @@
 from django import template
-
+from ..censor import CENSOR_WORDS
 
 register = template.Library()
 
@@ -16,4 +16,9 @@ def currency(value):
 
 @register.filter()
 def censor(text):
-   return f'{text[0]}{"*" * len(text)}'
+   text_list = text.split()
+   for i in range(len(text_list)):
+      if text_list[i].upper() in CENSOR_WORDS:
+         text_list[i] = f'{text[0]}{"*" * (len(text_list[i]) - 1)}'
+   return ' '.join(text_list)
+
