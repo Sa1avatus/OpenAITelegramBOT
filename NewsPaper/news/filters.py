@@ -1,9 +1,7 @@
 from django_filters import FilterSet
 from .models import Post
 
-# Создаем свой набор фильтров для модели Product.
-# FilterSet, который мы наследуем,
-# должен чем-то напомнить знакомые вам Django дженерики.
+# Создаем свой набор фильтров для модели Post.
 class PostFilter(FilterSet):
    class Meta:
        # В Meta классе мы должны указать Django модель,

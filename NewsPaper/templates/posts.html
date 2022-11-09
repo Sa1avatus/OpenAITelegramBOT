@@ -50,9 +50,9 @@ Posts
            <a href="?{% url_replace page=page_obj.previous_page_number %}">{{ page_obj.previous_page_number }}</a>
        {% endif %}
    {% endif %}
-
-   {{ page_obj.number }}
-
+    {% if paginator.num_pages != 1 %}
+        {{ page_obj.number }}
+    {% endif %}
    {% if page_obj.has_next %}
        <a href="?{% url_replace page=page_obj.next_page_number %}">{{ page_obj.next_page_number }}</a>
        {% if paginator.num_pages != page_obj.next_page_number %}
