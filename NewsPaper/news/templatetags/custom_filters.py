@@ -13,3 +13,7 @@ def currency(value):
    """
    # Возвращаемое функцией значение подставится в шаблон.
    return f'{value} Р'
+
+@register.filter()
+def censor(text):
+   return f'{text[0]}{"*" * len(text)}'
