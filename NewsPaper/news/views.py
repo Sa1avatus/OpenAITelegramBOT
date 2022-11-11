@@ -6,6 +6,9 @@ from datetime import datetime
 from .filters import PostFilter
 from .forms import PostForm
 from django.core.exceptions import ValidationError
+from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
 
 
 class PostList(ListView):
@@ -67,7 +70,8 @@ class ArticleCreate(CreateView):
         return super().form_valid(form)
 
 
-class PostUpdate(UpdateView):
+#@method_decorator(LoginRequiredMixin, TemplateView)
+class PostUpdate(LoginRequiredMixin, UpdateView):
     form_class = PostForm
     model = Post
     template_name = 'post_edit.html'
@@ -77,3 +81,11 @@ class PostDelete(DeleteView):
     model = Post
     template_name = 'post_delete.html'
     success_url = reverse_lazy('post_list')
+
+
+# class ProtectedView(TemplateView):
+#     template_name = 'prodected_page.html'
+#
+#     @method_decorator(login_required)
+#     def dispatch(self, *args, **kwargs):
+#         return super().dispatch(*args, **kwargs)

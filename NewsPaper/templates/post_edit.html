@@ -1,7 +1,7 @@
 {% extends 'flatpages/default.html' %}
 
 {% block content %}
-<h1>Пост</h1>
+<h1>{{ post.get_type_display }}</h1>
 <hr>
 <form action="" method="post">
     {% csrf_token %}

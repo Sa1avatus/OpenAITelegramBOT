@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Avg, Count, Min, Sum
 from django.urls import reverse
 
-POST_TYPE = (('1', 'статья'), ('2', 'новость'))
+POST_TYPE = (('1', 'Статья'), ('2', 'Новость'))
 
 
 class Author(models.Model):

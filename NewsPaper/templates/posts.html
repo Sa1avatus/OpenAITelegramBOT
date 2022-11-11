@@ -7,26 +7,26 @@ Posts
 
 
 {% block content %}
-   <h1>Кколичество всех постов: {{posts|length}}</h1>
+   <h1>Количество всех постов: {{post.count}}</h1>
    <form action="" method="get">
        {{ filterset.form.as_p }}
        <input type="submit" value="Найти" />
    </form>
    {% if posts %}
        <table>
-           <tr>
-               <td>Дата создания</td>
-               <td>Автор</td>
-               <td>Тип</td>
-               <td>Наименование</td>
-               <td>Описание</td>
-               <td>Рейтинг</td>
+           <tr style='width:100%;'>
+               <td style='width:10%'>Дата создания</td>
+               <td style='width:20%'>Автор</td>
+               <td style='width:10%'>Тип</td>
+               <td style='width:20%'>Наименование</td>
+               <td style='width:30%'>Описание</td>
+               <td style='width:10%'>Рейтинг</td>
            </tr>
            {% for post in posts %}
            <tr>
                <td>{{ post.creation|date:'d.m.Y' }}</td>
                <td>{{ post.author.user }}</td>
-               <td>{{ post.type.name }}</td>
+               <td>{{ post.get_type_display }}</td>
                <td>{{ post.title|censor }}</td>
                <td>{{ post.description|truncatechars:20|censor }}</td>
                <td>{{ post.rating }}</td>
