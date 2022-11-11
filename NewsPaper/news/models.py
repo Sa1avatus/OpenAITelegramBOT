@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Avg, Count, Min, Sum
+from django.urls import reverse
 
 POST_TYPE = (('1', 'статья'), ('2', 'новость'))
 
@@ -44,6 +45,9 @@ class Post(models.Model):
 
     def __str__(self):
         return f'{self.title}:\n {self.description[:124]}...'
+
+    def get_absolute_url(self):
+        return reverse('post_detail', args=[str(self.id)])
 
 
 class PostCategory(models.Model):

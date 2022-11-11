@@ -1,13 +1,15 @@
 from django import forms
 from .models import Post
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class PostForm(forms.ModelForm):
     description = models.TextField()
     title = models.CharField(max_length=255)
+
     class Meta:
         model = Post
-        fields = '__all__'
+        fields = ['author', 'title', 'description', 'category']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -24,7 +26,6 @@ class PostForm(forms.ModelForm):
             )
         return cleaned_data
 
-    def get_absolute_url(self):
-        return reverse('st_detail', args=[str(self.id)])
+
 
 

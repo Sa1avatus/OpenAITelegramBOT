@@ -7,8 +7,7 @@ Posts
 
 
 {% block content %}
-   <h1>Все посты (количество всех новостей: {{posts|length}})</h1>
-   {# Добавляем форму, которая объединяет набор полей, которые будут отправляться в запросе #}
+   <h1>Кколичество всех постов: {{posts|length}}</h1>
    <form action="" method="get">
        {{ filterset.form.as_p }}
        <input type="submit" value="Найти" />
@@ -39,11 +38,7 @@ Posts
        <h2>Постов нет!</h2>
    {% endif %}
 
-   {# Добавляем пагинацию на страницу #}
-
-   {# Информация о предыдущих страницах #}
    {% if page_obj.has_previous %}
-       {# Для каждой ссылки пагинации указываем обработку через новый тег #}
        <a href="?{% url_replace page=1 %}">1</a>
        {% if page_obj.previous_page_number != 1 %}
            ...

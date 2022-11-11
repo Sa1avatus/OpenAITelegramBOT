@@ -7,12 +7,13 @@ from .filters import PostFilter
 from .forms import PostForm
 from django.core.exceptions import ValidationError
 
+
 class PostList(ListView):
     model = Post
     ordering = '-creation'
     template_name = 'posts.html'
     context_object_name = 'posts'
-    paginate_by = 3
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -38,7 +39,31 @@ class PostCreate(CreateView):
 
     def form_valid(self, form):
         post = form.save(commit=False)
-        post.quantity = 13
+        post.rating = 0
+        return super().form_valid(form)
+
+
+class NewsCreate(CreateView):
+    form_class = PostForm
+    model = Post
+    template_name = 'post_edit.html'
+
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        post.rating = 0
+        post.type = 2
+        return super().form_valid(form)
+
+
+class ArticleCreate(CreateView):
+    form_class = PostForm
+    model = Post
+    template_name = 'post_edit.html'
+
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        post.rating = 0
+        post.type = 1
         return super().form_valid(form)
 
 
