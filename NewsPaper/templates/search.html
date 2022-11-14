@@ -1,0 +1,16 @@
+{% extends 'posts.html' %}
+{% load custom_filters %}
+{% load custom_tags %}
+{% block title %}
+Search
+{% endblock title %}
+
+
+{% block content %}
+   <!--<h1>Количество всех постов: {{post.objects.all|length }}</h1>-->
+   <form action="" method="get">
+       {{ filterset.form.as_p }}
+       <input type="submit" value="Найти" />
+   </form>
+
+{% endblock content %}

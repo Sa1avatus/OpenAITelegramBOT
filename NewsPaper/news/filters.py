@@ -1,30 +1,21 @@
 import django_filters
+from django import forms
+from django_filters import ModelChoiceFilter, DateTimeFilter, NumberFilter, IsoDateTimeFilter
 from django.db import models
-from .models import Post
+from .models import Post, Author
 
 
 class PostFilter(django_filters.FilterSet):
-    #creation = django_filters.NumberFilter(field_name='creation', lookup_expr='year')
-    creation__gt = django_filters.DateTimeFilter(field_name='creation', lookup_expr='year')
-    #rating = django_filters.NumberFilter()
-    rating__gt = django_filters.NumberFilter(field_name='rating', lookup_expr='gt')
+    rating = NumberFilter(field_name='rating', lookup_expr='gt')
+    creation = DateTimeFilter(field_name='creation',
+                                           widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                           lookup_expr='gt', label='creation')
 
     class Meta:
         model = Post
-        fields = ['title', 'creation', 'rating']
-        filter_overrides = {
-            models.CharField: {
-                'filter_class': django_filters.CharFilter,
-                'extra': lambda f: {
-                    'lookup_expr': 'icontains',
-                },
-            },
-            models.BooleanField: {
-                'filter_class': django_filters.BooleanFilter,
-                'extra': lambda f: {
-                    'widget': forms.CheckboxInput,
-                },
-            },
+        fields = {
+            'author__user': ['exact'],
+            'title': ['icontains'],
         }
 
 

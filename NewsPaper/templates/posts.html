@@ -7,11 +7,11 @@ Posts
 
 
 {% block content %}
-   <h1>Количество всех постов: {{post.count}}</h1>
-   <form action="" method="get">
-       {{ filterset.form.as_p }}
-       <input type="submit" value="Найти" />
-   </form>
+   <!--<h1>Количество всех постов: {{post.objects.all|length }}</h1>-->
+<!--   <form action="" method="get">-->
+<!--       {{ filterset.form.as_p }}-->
+<!--       <input type="submit" value="Найти" />-->
+<!--   </form>-->
    {% if posts %}
        <table>
            <tr style='width:100%;'>
