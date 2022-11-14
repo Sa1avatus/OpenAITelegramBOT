@@ -18,9 +18,15 @@ class Author(models.Model):
             self.rating = cnt1 + cnt2 + cnt3
             self.save()
 
+    def __str__(self):
+        return self.user.username
+
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True) # Категории новостей/статей — темы, которые они отражают
+
+    def __str__(self):
+        return self.name
 
 
 class Post(models.Model):
