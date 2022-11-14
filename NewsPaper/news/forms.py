@@ -3,12 +3,19 @@ from .models import Post
 from django.db import models
 from django.core.exceptions import ValidationError
 
+
 class PostForm(forms.ModelForm):
     description = models.TextField()
     title = models.CharField(max_length=255)
 
     class Meta:
         model = Post
+        # fields = {
+        #     'author__user': ['exact'],
+        #     'title': ['icontains'],
+        #     'description': ['icontains'],
+        #     'category': ['icontains'],
+        # }
         fields = ['author', 'title', 'description', 'category']
 
     def clean(self):
