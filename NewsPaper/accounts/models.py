@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User, Group
 from django import forms
-from allauth.account.forms import SignupForm
+from allauth.account.forms import SignupForm, UserForm
 
 
 class BaseRegisterForm(UserCreationForm):
@@ -28,3 +28,6 @@ class BasicSignupForm(SignupForm):
         return user
 
 
+class BaseProfileForm(UserForm):
+    def __str__(self):
+        return super().user()

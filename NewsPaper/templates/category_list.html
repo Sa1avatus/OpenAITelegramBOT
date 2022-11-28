@@ -1,0 +1,14 @@
+<!--  наследуемся от шаблона default.html, который мы создавали для flatpages -->
+{% extends 'flatpages/default.html' %}
+{% load custom_filters %}
+
+{% block title %}
+Category
+{% endblock title %}
+{% if is_not_subscriber %}
+<button> <a href="../subscribe/"> Подписаться</a> </button>
+{% endif %}
+<!-- В контенте на странице мы выводим сам товар, идентификатор которого был передан в url -->
+{% block content %}
+
+{% endblock content %}

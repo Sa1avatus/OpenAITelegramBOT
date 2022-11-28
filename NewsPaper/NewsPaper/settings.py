@@ -135,8 +135,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-LOGIN_URL = 'accounts/login/'
-#LOGIN_REDIRECT_URL = '/'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -159,4 +159,4 @@ EMAIL_HOST_USER = ''  # ваше имя пользователя, наприме
 EMAIL_HOST_PASSWORD = ''  # пароль от почты
 EMAIL_USE_SSL = True  # Яндекс использует ssl, подробнее о том, что это, почитайте в дополнительных источниках, но включать его здесь обязательно
 
-ACCOUNT_FORMS = {'signup': 'accounts.models.BasicSignupForm'}
+ACCOUNT_FORMS = {'signup': 'news.models.BasicSignupForm'}
