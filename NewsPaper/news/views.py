@@ -6,7 +6,7 @@ from datetime import datetime
 from .filters import PostFilter
 from .forms import *
 from django.core.exceptions import ValidationError
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, TemplateView
 from django.shortcuts import redirect
@@ -51,7 +51,8 @@ class PostDetail(DetailView):
     context_object_name = 'post'
 
 
-class PostCreate(LoginRequiredMixin, CreateView):
+class PostCreate(PermissionRequiredMixin, CreateView):
+    permission_required = ('news.add_post',)
     form_class = PostForm
     model = Post
     template_name = 'post_edit.html'
@@ -62,7 +63,8 @@ class PostCreate(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class NewsCreate(LoginRequiredMixin, CreateView):
+class NewsCreate(PermissionRequiredMixin, CreateView):
+    permission_required = ('news.add_post',)
     form_class = PostForm
     model = Post
     template_name = 'post_edit.html'
@@ -74,7 +76,8 @@ class NewsCreate(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ArticleCreate(LoginRequiredMixin, CreateView):
+class ArticleCreate(PermissionRequiredMixin, CreateView):
+    permission_required = ('news.add_post',)
     form_class = PostForm
     model = Post
     template_name = 'post_edit.html'
@@ -87,13 +90,15 @@ class ArticleCreate(LoginRequiredMixin, CreateView):
 
 
 #@method_decorator(LoginRequiredMixin, TemplateView)
-class PostUpdate(LoginRequiredMixin, UpdateView):
+class PostUpdate(PermissionRequiredMixin, UpdateView):
+    permission_required = ('news.change_post',)
     form_class = PostForm
     model = Post
     template_name = 'post_edit.html'
 
 
-class PostDelete(LoginRequiredMixin, DeleteView):
+class PostDelete(PermissionRequiredMixin, DeleteView):
+    permission_required = ('news.delete_post',)
     model = Post
     template_name = 'post_delete.html'
     success_url = reverse_lazy('post_list')
