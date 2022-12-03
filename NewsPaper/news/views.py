@@ -1,15 +1,15 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, reverse, redirect
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from .models import Post, Category
-from datetime import datetime
 from .filters import PostFilter
 from .forms import *
-from django.core.exceptions import ValidationError
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, TemplateView
-from django.shortcuts import redirect
+from django.core.mail import send_mail
+from datetime import datetime
+
 
 class IndexView(LoginRequiredMixin, TemplateView):
     template_name = 'account/index.html'
