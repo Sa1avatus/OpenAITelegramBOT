@@ -1,3 +1,12 @@
 # NewsPortal
- 
-Набор shell команд Django находится в файле Django_Shell_commands
+
+python -m venv venv 
+
+venv\scripts\activate 
+
+pip install django
+
+pip install django-filter
+
+pip install django-allauth
+
