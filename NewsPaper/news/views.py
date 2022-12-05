@@ -14,6 +14,8 @@ import imaplib, smtplib
 from email.mime.text import MIMEText
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from dotenv import load_dotenv
+load_dotenv()
 
 
 class IndexView(LoginRequiredMixin, TemplateView):
@@ -93,10 +95,8 @@ class NewsCreate(PermissionRequiredMixin, CreateView):
         new = Post(
             description=request.POST['description'],
             author_id=request.POST['author'],
-            #category__set=request.POST['category'],
             title=request.POST['title'],
         )
-
         new.save()
         new.category.set(request.POST['category'])
         Notification().send(new)
@@ -118,10 +118,8 @@ class ArticleCreate(PermissionRequiredMixin, CreateView):
         new = Post(
             description=request.POST['description'],
             author_id=request.POST['author'],
-            #category__set=request.POST['category'],
             title=request.POST['title'],
         )
-
         new.save()
         new.category.set(request.POST['category'])
         Notification().send(new)
@@ -184,27 +182,25 @@ class Notification:
         return render(request, 'make_appointment.html', {})
 
     def send(self, post):
+        print(os.getenv('SMTP_EMAIL_HOST'))
+        server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
+        server.login(os.getenv('EMAIL_HOST_USER'), os.getenv('EMAIL_HOST_PASSWORD'))
         post = post
         user_list = []
+        str_emails = ''
         for category in post.category.all():
             for user in category.subscribers.all():
                 if user not in user_list:
+                    str_emails = f'{str_emails}; {user.email}'
                     user_list.append(str(user))
-        print(user_list)
         html_content = render_to_string(
             'notifications/new_news_notification.html',
             {'post': post}
         )
-
-        msg = EmailMultiAlternatives(
-            subject=f'{post.title}',
-            body=f'Здравствуй. Новая статья в твоем любимом разделе!',
-            from_email='vasal3000@mail.ru',
-            to=[user_list]
-        )
-        msg.attach_alternative(html_content, 'text/html')
-        #msg.send()
-
+        msg = MIMEText(html_content, 'html')
+        msg['To'] = str_emails
+        msg['Subject'] = f'{post.title}'
+        server.send_message(msg)
 
 
 @login_required
