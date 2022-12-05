@@ -12,4 +12,13 @@ Post
 <h1>{{ post.title|censor }}</h1>
 <h1>{{ post.creation|date:'d.m.Y' }}</h1>
 {{ post.description|censor }}
+{% if user_auth %}
+    {% for category in categories %}
+        {% if not request.user in category.subscribers.all %}
+            <BR><button><a href="{% url 'subscribe' category.pk %}">Подписаться на категорию {{ category }}</a></button>
+        {% else %}
+            <BR><button><a href="{% url 'unsubscribe' category.pk %}">Отписаться от категории {{ category }}</a></button>
+        {% endif %}
+    {% endfor %}
+{% endif %}
 {% endblock content %}

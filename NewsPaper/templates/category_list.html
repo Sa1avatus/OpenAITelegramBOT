@@ -5,10 +5,16 @@
 {% block title %}
 Category
 {% endblock title %}
-{% if is_not_subscriber %}
-<button> <a href="../subscribe/"> Подписаться</a> </button>
-{% endif %}
-<!-- В контенте на странице мы выводим сам товар, идентификатор которого был передан в url -->
-{% block content %}
 
+
+{% block content %}
+    {% if user_auth %}
+        {% if not is_subscriber %}
+            <h3>Подпишитесь на рассылку постов данной категории на ваш e-mail.</h3>
+            <button><a href="{% url 'subscribe' category.pk %}">Подписаться</a></button>
+        {% else %}
+            <h3>Вы можете отписаться от рассылки постов данной категории на ваш e-mail.</h3>
+            <button><a href="{% url 'unsubscribe' category.pk %}">Отписаться</a></button>
+        {% endif %}
+    {% endif %}
 {% endblock content %}

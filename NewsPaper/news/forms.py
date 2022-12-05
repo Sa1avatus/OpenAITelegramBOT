@@ -6,12 +6,6 @@ from django.contrib.auth.forms import UserCreationForm
 from allauth.account.forms import SignupForm, UserForm
 from django.contrib.auth.models import User, Group
 
-# class AuthorSelect(forms.ModelForm):
-#     username = models.TextField()
-#
-#     class Meta:
-#         model = Author
-#         fields = ['user']
 
 class PostForm(forms.ModelForm):
     description = models.TextField()
@@ -26,7 +20,6 @@ class PostForm(forms.ModelForm):
         cleaned_data = super().clean()
         description = cleaned_data.get("description")
         title = cleaned_data.get("title")
-        #author = cleaned_data.get("author")
         if description is not None and len(description) < 20:
             raise ValidationError({
                 "description": "Описание не может быть менее 20 символов."
