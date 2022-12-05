@@ -15,6 +15,7 @@ from email.mime.text import MIMEText
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
+
 class IndexView(LoginRequiredMixin, TemplateView):
     template_name = 'account/index.html'
 
@@ -60,12 +61,7 @@ class PostDetail(DetailView):
         context['user_auth'] = self.request.user.is_authenticated
         id = self.kwargs.get('pk')
         post = Post.objects.get(pk=id)
-        #is_subscriber = True
         context['categories'] = post.category.all()
-        # for category in post.category.all():
-        #     if self.request.user not in category.subscribers.all():
-        #         is_subscriber = False
-        # context['is_subscriber'] = is_subscriber
         return context
 
 
@@ -94,15 +90,17 @@ class NewsCreate(PermissionRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def post(self, request, *args, **kwargs):
-        print(request.POST['author'])
         new = Post(
-            article=request.POST['news'],
-            text=request.POST['text'],
-            author_id=request.POST['author']
+            description=request.POST['description'],
+            author_id=request.POST['author'],
+            #category__set=request.POST['category'],
+            title=request.POST['title'],
         )
-        new.save()
-        Notification.send(new)
 
+        new.save()
+        new.category.set(request.POST['category'])
+        Notification().send(new)
+        return redirect('/news/')
 
 class ArticleCreate(PermissionRequiredMixin, CreateView):
     permission_required = ('news.add_post',)
@@ -117,14 +115,17 @@ class ArticleCreate(PermissionRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def post(self, request, *args, **kwargs):
-        print(request.POST['author'])
         new = Post(
-            article=request.POST['article'],
-            text=request.POST['text'],
-            author_id=request.POST['author']
+            description=request.POST['description'],
+            author_id=request.POST['author'],
+            #category__set=request.POST['category'],
+            title=request.POST['title'],
         )
+
         new.save()
-        Notification.send(new)
+        new.category.set(request.POST['category'])
+        Notification().send(new)
+        return redirect('/news/')
 
 
 class PostUpdate(PermissionRequiredMixin, UpdateView):
@@ -182,29 +183,28 @@ class Notification:
     def get(self, request, *args, **kwargs):
         return render(request, 'make_appointment.html', {})
 
-    def send(self, new, *args, **kwargs):
-        post = Post.objects.get(pk=new.pk)
+    def send(self, post):
+        post = post
         user_list = []
         for category in post.category.all():
-            for user in category.user.all():
+            for user in category.subscribers.all():
                 if user not in user_list:
                     user_list.append(str(user))
         print(user_list)
         html_content = render_to_string(
-            'new_send_to_email.html',
-            {'new': new}
+            'notifications/new_news_notification.html',
+            {'post': post}
         )
 
         msg = EmailMultiAlternatives(
-            subject=f'{new.article}',
+            subject=f'{post.title}',
             body=f'Здравствуй. Новая статья в твоем любимом разделе!',
             from_email='vasal3000@mail.ru',
             to=[user_list]
         )
         msg.attach_alternative(html_content, 'text/html')
-        msg.send()
+        #msg.send()
 
-        return redirect('/news/')
 
 
 @login_required
