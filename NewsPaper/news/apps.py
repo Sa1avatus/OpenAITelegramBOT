@@ -6,4 +6,4 @@ class NewsConfig(AppConfig):
     name = 'news'
 
     def ready(self):
-        from news import triggers
+        import news.triggers
