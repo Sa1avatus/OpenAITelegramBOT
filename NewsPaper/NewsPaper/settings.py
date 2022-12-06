@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.flatpages',
     'news.apps.NewsConfig',
-    'accounts',
+    #'accounts',
     'django_filters',
     'allauth',
     'allauth.account',
@@ -139,7 +139,7 @@ STATIC_URL = 'static/'
 SITE_URL = 'http://127.0.0.1:8000'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
-
+ACCOUNT_FORMS = {'signup': 'news.forms.BasicSignupForm'}
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
@@ -155,5 +155,9 @@ APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds
 
 
-
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 #ACCOUNT_FORMS = {'signup': 'news.models.BasicSignupForm'}

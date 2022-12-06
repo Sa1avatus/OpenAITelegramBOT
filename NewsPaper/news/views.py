@@ -1,17 +1,12 @@
+import allauth.socialaccount.models as au
 from django.shortcuts import render, get_object_or_404, reverse, redirect
 from django.urls import reverse_lazy
-from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .filters import PostFilter
 from .forms import *
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, TemplateView
-from datetime import datetime
-import os
-import smtplib
-from email.mime.text import MIMEText
-from django.template.loader import render_to_string
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -27,7 +22,7 @@ class IndexView(LoginRequiredMixin, TemplateView):
 
 class BaseRegisterView(CreateView):
     model = User
-    form_class = BaseRegisterForm
+    form_class = BasicSignupForm
     success_url = '/'
 
 
@@ -174,28 +169,6 @@ class CategoryListView(ListView):
         context['category'] = self.category
         return context
 
-
-# class Notification:
-#     def send(self, post):
-#         server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
-#         server.login(os.getenv('EMAIL_HOST_USER'), os.getenv('EMAIL_HOST_PASSWORD'))
-#         post = post
-#         user_list = []
-#         str_emails = ''
-#         for category in post.category.all():
-#             for user in category.subscribers.all():
-#                 if user not in user_list:
-#                     str_emails = f'{str_emails}; {user.email}'
-#                     user_list.append(str(user))
-#         html_content = render_to_string(
-#             'notifications/new_news_notification.html',
-#             {'post': post}
-#         )
-#         msg = MIMEText(html_content, 'html')
-#         msg['To'] = str_emails
-#         msg['Subject'] = f'{post.title}'
-#         server.send_message(msg)
-#
 
 @login_required
 def subscribe(request, pk):
