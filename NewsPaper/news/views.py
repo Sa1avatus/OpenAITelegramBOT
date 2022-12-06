@@ -7,12 +7,10 @@ from .forms import *
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, TemplateView
-from django.core.mail import send_mail
 from datetime import datetime
 import os
-import imaplib, smtplib
+import smtplib
 from email.mime.text import MIMEText
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from dotenv import load_dotenv
 load_dotenv()
@@ -24,7 +22,6 @@ class IndexView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_not_author'] = not self.request.user.groups.filter(name = 'authors').exists()
-        print(context)
         return context
 
 
@@ -99,7 +96,7 @@ class NewsCreate(PermissionRequiredMixin, CreateView):
         )
         new.save()
         new.category.set(request.POST['category'])
-        Notification().send(new)
+        #Notification().send(new)
         return redirect('/news/')
 
 
@@ -123,7 +120,7 @@ class ArticleCreate(PermissionRequiredMixin, CreateView):
         )
         new.save()
         new.category.set(request.POST['category'])
-        Notification().send(new)
+        #Notification().send(new)
         return redirect('/news/')
 
 
@@ -178,28 +175,27 @@ class CategoryListView(ListView):
         return context
 
 
-class Notification:
-    def send(self, post):
-        print(os.getenv('SMTP_EMAIL_HOST'))
-        server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
-        server.login(os.getenv('EMAIL_HOST_USER'), os.getenv('EMAIL_HOST_PASSWORD'))
-        post = post
-        user_list = []
-        str_emails = ''
-        for category in post.category.all():
-            for user in category.subscribers.all():
-                if user not in user_list:
-                    str_emails = f'{str_emails}; {user.email}'
-                    user_list.append(str(user))
-        html_content = render_to_string(
-            'notifications/new_news_notification.html',
-            {'post': post}
-        )
-        msg = MIMEText(html_content, 'html')
-        msg['To'] = str_emails
-        msg['Subject'] = f'{post.title}'
-        server.send_message(msg)
-
+# class Notification:
+#     def send(self, post):
+#         server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
+#         server.login(os.getenv('EMAIL_HOST_USER'), os.getenv('EMAIL_HOST_PASSWORD'))
+#         post = post
+#         user_list = []
+#         str_emails = ''
+#         for category in post.category.all():
+#             for user in category.subscribers.all():
+#                 if user not in user_list:
+#                     str_emails = f'{str_emails}; {user.email}'
+#                     user_list.append(str(user))
+#         html_content = render_to_string(
+#             'notifications/new_news_notification.html',
+#             {'post': post}
+#         )
+#         msg = MIMEText(html_content, 'html')
+#         msg['To'] = str_emails
+#         msg['Subject'] = f'{post.title}'
+#         server.send_message(msg)
+#
 
 @login_required
 def subscribe(request, pk):

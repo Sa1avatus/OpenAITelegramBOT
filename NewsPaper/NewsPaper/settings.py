@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django.contrib.flatpages',
-    'news',
+    'news.apps.NewsConfig',
     'accounts',
     'django_filters',
     'allauth',
@@ -136,7 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = 'static/'
-
+SITE_URL = 'http://127.0.0.1:8000'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 
