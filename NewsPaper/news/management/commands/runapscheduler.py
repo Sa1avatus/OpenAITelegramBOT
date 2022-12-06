@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from django.conf import settings
@@ -5,8 +6,13 @@ from django.conf import settings
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from django.core.management.base import BaseCommand
+from django.template.loader import render_to_string
 from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
+
+from NewsPaper.settings import SITE_URL
+from news.models import Post, Category
+from news.triggers import send_notification
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +20,20 @@ logger = logging.getLogger(__name__)
 # наша задача по выводу текста на экран
 def my_job():
     #  Your job processing logic here...
-    print('hello from job')
+    last_week = datetime.datetime.now() - datetime.timedelta(days=7)
+    posts = Post.objects.filter(creation__gte=last_week)
+    categories = set(posts.values_list('category__name', flat=True))
+    subscribers = set(Category.objects.filter(name__in=categories).values_list('subscribers__email', flat=True))
+    html_content = render_to_string(
+        'notifications/weekly_news.html',
+        {'posts': posts,
+         'link': f'{SITE_URL}'}
+    )
+    subject = 'Еженедельная рассылка новостей'
+    for subscriber in subscribers:
+        if subscriber and len(subscriber) > 0:
+            send_notification(html_content, subscriber, subject)
+
 
 
 # функция, которая будет удалять неактуальные задачи

@@ -12,18 +12,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def send_notification(instance, subscriber):
+def send_notification(html_content, subscriber, subject):
     server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
     server.login(os.getenv('EMAIL_HOST_USER'), os.getenv('EMAIL_HOST_PASSWORD'))
-    post = instance
-    html_content = render_to_string(
-        'notifications/new_news_notification.html',
-        {'post': post,
-         'link': f'{SITE_URL}/news/{post.pk}'}
-    )
+    #post = instance
+    # html_content = render_to_string(
+    #     'notifications/new_news_notification.html',
+    #     {'post': post,
+    #      'link': f'{SITE_URL}/news/{post.pk}'}
+    # )
     msg = MIMEText(html_content, 'html')
     msg['To'] = subscriber
-    msg['Subject'] = f'{post.title}'
+    msg['Subject'] = subject
     server.send_message(msg)
 
 
@@ -36,7 +36,12 @@ def notify_new_post(instance, **kwargs):
             subscribers += category.subscribers.all()
         subscribers = [s.email for s in subscribers]
         print(subscribers)
+        html_content = render_to_string(
+            'notifications/new_news_notification.html',
+            {'post': instance,
+             'link': f'{SITE_URL}/news/{instance.pk}'}
+        )
         for subscriber in subscribers:
             if len(subscriber) > 0:
-                send_notification(instance, subscriber)
+                send_notification(html_content, subscriber, instance.title)
 
