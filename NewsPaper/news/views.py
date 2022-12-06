@@ -1,5 +1,6 @@
 import allauth.socialaccount.models as au
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, reverse, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -59,6 +60,16 @@ class PostDetail(DetailView):
         context['categories'] = post.category.all()
         return context
 
+    def get_object(self, *args, **kwargs):  # переопределяем метод получения объекта, как ни странно
+        obj = cache.get(f'post-{self.kwargs["pk"]}',
+                        None)  # кэш очень похож на словарь, и метод get действует так же. Он забирает значение по ключу, если его нет, то забирает None.
+
+        # если объекта нет в кэше, то получаем его и записываем в кэш
+        if not obj:
+            obj = super().get_object(queryset=self.queryset)
+            cache.set(f'post-{self.kwargs["pk"]}', obj)
+        return obj
+
 
 class PostCreate(PermissionRequiredMixin, CreateView):
     permission_required = ('news.add_post',)
@@ -92,7 +103,6 @@ class NewsCreate(PermissionRequiredMixin, CreateView):
         )
         new.save()
         new.category.set(request.POST['category'])
-        #Notification().send(new)
         return redirect('/news/')
 
 
@@ -116,7 +126,6 @@ class ArticleCreate(PermissionRequiredMixin, CreateView):
         )
         new.save()
         new.category.set(request.POST['category'])
-        #Notification().send(new)
         return redirect('/news/')
 
 
@@ -193,4 +202,7 @@ def make_me_author(request):
     author_group = Group.objects.get(name='authors')
     if not request.user.groups.filter(name='authors').exists():
         author_group.user_set.add(user)
+    if not Author.user == user.id:
+        author = Author(user=user)
+        author.save()
     return redirect('/')

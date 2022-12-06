@@ -13,6 +13,8 @@ Posts
 <!--       <input type="submit" value="Найти" />-->
 <!--   </form>-->
    {% if posts %}
+    {% load cache %} <!-- Загружаем кэширование -->
+    {% cache 30 header %} <!-- Кэшируем отдельный блок на 30 секунд -->
        <table>
            <tr style='width:100%;'>
                <td style='width:10%'>Дата создания</td>
@@ -22,6 +24,7 @@ Posts
                <td style='width:30%'>Описание</td>
                <td style='width:10%'>Рейтинг</td>
            </tr>
+    {% endcache %}
            {% for post in posts %}
            <tr>
                <td><a href="/{{ post.id }}">{{ post.creation|date:'d.m.Y' }}</a></td>

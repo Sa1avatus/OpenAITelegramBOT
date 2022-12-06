@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Avg, Count, Min, Sum
 from django.urls import reverse
@@ -55,6 +56,10 @@ class Post(models.Model):
 
     def get_absolute_url(self):
         return reverse('post_detail', args=[str(self.id)])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs) # сначала вызываем метод родителя, чтобы объект сохранился
+        cache.delete(f'post-{self.pk}') # затем удаляем его из кэша, чтобы сбросить его
 
 
 class PostCategory(models.Model):
