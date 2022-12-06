@@ -37,7 +37,7 @@ class BaseRegisterView(CreateView):
 class PostList(ListView):
     model = Post
     ordering = '-creation'
-    template_name = 'posts.html'
+    template_name = 'posts/posts.html'
     context_object_name = 'posts'
     paginate_by = 10
 
@@ -54,7 +54,7 @@ class PostList(ListView):
 
 class PostDetail(DetailView):
     model = Post
-    template_name = 'post.html'
+    template_name = 'posts/post.html'
     context_object_name = 'post'
 
     def get_context_data(self, **kwargs):
@@ -71,7 +71,7 @@ class PostCreate(PermissionRequiredMixin, CreateView):
     permission_required = ('news.add_post',)
     form_class = PostForm
     model = Post
-    template_name = 'post_edit.html'
+    template_name = 'posts/post_edit.html'
 
     def form_valid(self, form):
         post = form.save(commit=False)
@@ -83,7 +83,7 @@ class NewsCreate(PermissionRequiredMixin, CreateView):
     permission_required = ('news.add_post',)
     form_class = PostForm
     model = Post
-    template_name = 'post_edit.html'
+    template_name = 'posts/post_edit.html'
 
     def form_valid(self, form):
         post = form.save(commit=False)
@@ -102,11 +102,12 @@ class NewsCreate(PermissionRequiredMixin, CreateView):
         Notification().send(new)
         return redirect('/news/')
 
+
 class ArticleCreate(PermissionRequiredMixin, CreateView):
     permission_required = ('news.add_post',)
     form_class = PostForm
     model = Post
-    template_name = 'post_edit.html'
+    template_name = 'posts/post_edit.html'
 
     def form_valid(self, form):
         post = form.save(commit=False)
@@ -130,20 +131,20 @@ class PostUpdate(PermissionRequiredMixin, UpdateView):
     permission_required = ('news.change_post',)
     form_class = PostForm
     model = Post
-    template_name = 'post_edit.html'
+    template_name = 'posts/post_edit.html'
 
 
 class PostDelete(PermissionRequiredMixin, DeleteView):
     permission_required = ('news.delete_post',)
     model = Post
-    template_name = 'post_delete.html'
+    template_name = 'posts/post_delete.html'
     success_url = reverse_lazy('post_list')
 
 
 class PostSearch(ListView):
     model = Post
     ordering = '-creation'
-    template_name = 'search.html'
+    template_name = 'posts/search.html'
     context_object_name = 'posts'
     paginate_by = 10
     success_url = reverse_lazy('post_list')
@@ -161,7 +162,7 @@ class PostSearch(ListView):
 
 class CategoryListView(ListView):
     model = Post
-    template_name = 'category_list.html'
+    template_name = 'posts/category_list.html'
     context_object_name = 'categories'
     paginate_by = 10
 
@@ -178,9 +179,6 @@ class CategoryListView(ListView):
 
 
 class Notification:
-    def get(self, request, *args, **kwargs):
-        return render(request, 'make_appointment.html', {})
-
     def send(self, post):
         print(os.getenv('SMTP_EMAIL_HOST'))
         server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
@@ -208,7 +206,7 @@ def subscribe(request, pk):
     user = request.user
     category = Category.objects.get(id=pk)
     category.subscribers.add(user)
-    return render(request, 'subscribe.html', {'category': category, 'message': 'Вы подписались на категорию' })
+    return render(request, 'posts/subscribe.html', {'category': category, 'message': 'Вы подписались на категорию' })
 
 
 @login_required
