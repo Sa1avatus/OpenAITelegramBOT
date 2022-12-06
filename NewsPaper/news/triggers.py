@@ -15,12 +15,6 @@ load_dotenv()
 def send_notification(html_content, subscriber, subject):
     server = smtplib.SMTP_SSL(os.getenv('SMTP_EMAIL_HOST'), int(os.getenv('EMAIL_PORT')))
     server.login(os.getenv('EMAIL_HOST_USER'), os.getenv('EMAIL_HOST_PASSWORD'))
-    #post = instance
-    # html_content = render_to_string(
-    #     'notifications/new_news_notification.html',
-    #     {'post': post,
-    #      'link': f'{SITE_URL}/news/{post.pk}'}
-    # )
     msg = MIMEText(html_content, 'html')
     msg['To'] = subscriber
     msg['Subject'] = subject
@@ -35,7 +29,6 @@ def notify_new_post(instance, **kwargs):
         for category in categories:
             subscribers += category.subscribers.all()
         subscribers = [s.email for s in subscribers]
-        print(subscribers)
         html_content = render_to_string(
             'notifications/new_news_notification.html',
             {'post': instance,

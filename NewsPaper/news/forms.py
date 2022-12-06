@@ -1,10 +1,13 @@
 from django import forms
+from django.template.loader import render_to_string
+
 from .models import Post, Author, Category
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.contrib.auth.forms import UserCreationForm
 from allauth.account.forms import SignupForm, UserForm
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
+
+from .triggers import send_notification
 
 
 class PostForm(forms.ModelForm):
@@ -32,27 +35,17 @@ class PostForm(forms.ModelForm):
         return cleaned_data
 
 
-class BaseRegisterForm(UserCreationForm):
-    email = forms.EmailField(label = "Email")
-    first_name = forms.CharField(label = "Имя")
-    last_name = forms.CharField(label = "Фамилия")
-
-    class Meta:
-        model = User
-        fields = ("username",
-                  "first_name",
-                  "last_name",
-                  "email",
-                  "password1",
-                  "password2", )
-
-
 class BasicSignupForm(SignupForm):
 
     def save(self, request):
         user = super(BasicSignupForm, self).save(request)
         basic_group = Group.objects.get(name='common')
         basic_group.user_set.add(user)
+        html_content = render_to_string(
+            'notifications/greetings_new_user.html',
+        )
+        subject = 'Добро пожаловать на портал!'
+        send_notification(html_content, user.email, subject)
         return user
 
 
