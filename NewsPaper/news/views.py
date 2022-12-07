@@ -1,4 +1,3 @@
-import allauth.socialaccount.models as au
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, reverse, redirect
@@ -9,6 +8,8 @@ from .forms import *
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, TemplateView
+from .tasks import *
+import json
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -77,56 +78,22 @@ class PostCreate(PermissionRequiredMixin, CreateView):
     model = Post
     template_name = 'posts/post_edit.html'
 
-    def form_valid(self, form):
-        post = form.save(commit=False)
-        post.rating = 0
-        return super().form_valid(form)
-
-
-class NewsCreate(PermissionRequiredMixin, CreateView):
-    permission_required = ('news.add_post',)
-    form_class = PostForm
-    model = Post
-    template_name = 'posts/post_edit.html'
-
-    def form_valid(self, form):
-        post = form.save(commit=False)
-        post.rating = 0
-        post.type = 2
-        return super().form_valid(form)
-
     def post(self, request, *args, **kwargs):
-        new = Post(
-            description=request.POST['description'],
-            author_id=request.POST['author'],
-            title=request.POST['title'],
-        )
-        new.save()
-        new.category.set(request.POST['category'])
-        return redirect('/news/')
-
-
-class ArticleCreate(PermissionRequiredMixin, CreateView):
-    permission_required = ('news.add_post',)
-    form_class = PostForm
-    model = Post
-    template_name = 'posts/post_edit.html'
-
-    def form_valid(self, form):
-        post = form.save(commit=False)
-        post.rating = 0
-        post.type = 1
-        return super().form_valid(form)
-
-    def post(self, request, *args, **kwargs):
-        new = Post(
-            description=request.POST['description'],
-            author_id=request.POST['author'],
-            title=request.POST['title'],
-        )
-        new.save()
-        new.category.set(request.POST['category'])
-        return redirect('/news/')
+        if self.request.method == 'POST':
+            post_path = self.request.META['PATH_INFO']
+            if post_path == '/news/create/':
+                news_type = 2
+            else:
+                news_type = 1
+            post_mail = Post(author=Author.objects.get(user=self.request.user),
+                             description=request.POST.get('description'),
+                             title=request.POST.get('title'),
+                             type=news_type,
+                             )
+            post_mail.save()
+            post_mail.category.add(*request.POST.getlist('category'))
+            new_post_notification(post_mail)
+            return redirect('/news/')
 
 
 class PostUpdate(PermissionRequiredMixin, UpdateView):

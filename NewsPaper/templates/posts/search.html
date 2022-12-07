@@ -33,6 +33,7 @@ Search
                <td>{{ post.title|censor }}</td>
                <td>{{ post.description|truncatechars:20|censor }}</td>
                <td>{{ post.rating }}</td>
+               {% if post.author.user == user %}
                <td><a href="{% if post.type == '1' %}
                /news/{{ post.id }}/edit/
                {% else %}
@@ -40,6 +41,7 @@ Search
                {% endif %}
                ">Edit
                </a></td>
+               {% endif %}
            </tr>
            {% endfor %}
 

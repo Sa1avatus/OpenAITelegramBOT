@@ -28,20 +28,25 @@
                            <a class="nav-link" href="/news">Home</a>
                        </li>
                        <li class="nav-item">
+                           <a class="nav-link" href="/news/search">Поиск</a>
+                       </li>
+                       <li class="nav-item">
                            <a class="nav-link" href="/news/create">Создать новость</a>
                        </li>
                        <li class="nav-item">
                            <a class="nav-link" href="/article/create">Создать статью</a>
                        </li>
-                       <li class="nav-item">
-                           <a class="nav-link" href="/news/search">Поиск</a>
-                       </li>
+                   </ul>
+                   <ul class="nav navbar-nav float-end">
+                       {% if not user %}
                        <li class="nav-item">
                            <a class="nav-link" href="/accounts/login">Вход</a>
                        </li>
+                       {% else %}
                        <li class="nav-item">
                            <a class="nav-link" href="/accounts/profile">Профиль</a>
                        </li>
+                       {% endif %}
                    </ul>
                </div>
            </div>

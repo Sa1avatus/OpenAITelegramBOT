@@ -1,23 +1,28 @@
 from django import forms
+from django.forms import HiddenInput
 from django.template.loader import render_to_string
-
 from .models import Post, Author, Category
 from django.db import models
 from django.core.exceptions import ValidationError
 from allauth.account.forms import SignupForm, UserForm
 from django.contrib.auth.models import Group
-
+from .tasks import new_post_notification
 from .triggers import send_notification
 
 
 class PostForm(forms.ModelForm):
     description = models.TextField()
     title = models.CharField(max_length=255)
-    author = forms.ModelChoiceField(queryset=Author.objects.all())
+    #author = forms.ModelChoiceField(queryset=Author.objects.all())
     category = forms.ModelMultipleChoiceField(queryset=Category.objects.all())
+
     class Meta:
         model = Post
-        fields = ['author', 'title', 'description', 'category']
+        fields = ['author', 'type', 'title', 'description', 'category']
+        widgets = {
+            'author': HiddenInput(),
+            'type': HiddenInput(),
+        }
 
     def clean(self):
         cleaned_data = super().clean()

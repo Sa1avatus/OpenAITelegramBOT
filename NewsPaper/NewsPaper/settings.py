@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
 SECRET_KEY = 'django-insecure-)7naj^2ig-add-3kr24!hc74n0i&19sxu589ev^0vn8)4r4%v8'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -161,11 +163,19 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
-CELERY_BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+#CELERY_BROKER_URL = 'redis://localhost:6379'
+#CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_REDIS_HOST = os.getenv('REDIS_ENDPONT')
+CELERY_REDIS_PORT = os.getenv('REDIS_PORT')
+CELERY_ACCESS_KEY_ID = os.getenv('REDIS_USERNAME')
+CELERY_SECRET_ACCESS_KEY = os.getenv('REDIS_PASSWORD')
+CELERY_BROKER_URL = f'redis://{CELERY_ACCESS_KEY_ID}:{CELERY_SECRET_ACCESS_KEY}@{CELERY_REDIS_HOST}:{CELERY_REDIS_PORT}/0'
+CELERY_RESULT_BACKEND = f'redis://{CELERY_ACCESS_KEY_ID}:{CELERY_SECRET_ACCESS_KEY}@{CELERY_REDIS_HOST}:{CELERY_REDIS_PORT}/0'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+
 
 CACHES = {
     'default': {

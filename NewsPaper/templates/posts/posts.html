@@ -33,13 +33,15 @@ Posts
                <td>{{ post.title|censor }}</td>
                <td>{{ post.description|truncatechars:20|censor }}</td>
                <td>{{ post.rating }}</td>
-                              <td><a href="{% if post.type == '1' %}
+               {% if post.author.user == user %}
+               <td><a href="{% if post.type == '1' %}
                /news/{{ post.id }}/edit/
                {% else %}
                /article/{{ post.id }}/edit/
                {% endif %}
                ">Edit
                </a></td>
+               {% endif %}
            </tr>
            {% endfor %}
 
