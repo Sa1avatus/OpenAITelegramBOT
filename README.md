@@ -39,6 +39,8 @@
    ```bash
    $ python manage.py runserver 
    $ python manage.py runapscheduler 
+   $ celery -A NewsPaper worker -l INFO -P solo
+   $ celery -A NewsPaper beat -l INFO
    ```
 
 Доступ к порталу будет по ссылке [http://localhost:8000](http://localhost:8000)!
