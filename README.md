@@ -39,7 +39,7 @@
    ```bash
    $ python manage.py runserver 
    $ python manage.py runapscheduler 
-   $ celery -A NewsPaper worker -l INFO
+   $ celery -A NewsPaper worker -l INFO -P solo
    $ celery -A NewsPaper beat -l INFO
    ```
 
