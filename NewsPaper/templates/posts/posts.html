@@ -20,9 +20,11 @@ Posts
                <td style='width:10%'>Дата создания</td>
                <td style='width:20%'>Автор</td>
                <td style='width:10%'>Тип</td>
-               <td style='width:20%'>Наименование</td>
+               <td style='width:15%'>Наименование</td>
                <td style='width:30%'>Описание</td>
-               <td style='width:10%'>Рейтинг</td>
+               <td style='width:5%'>Рейтинг</td>
+               <td style='width:5%'></td>
+               <td style='width:5%'></td>
            </tr>
     {% endcache %}
            {% for post in posts %}
@@ -40,6 +42,16 @@ Posts
                /article/{{ post.id }}/edit/
                {% endif %}
                ">Edit
+               </a></td>
+               {% endif %}
+
+               {% if post.author.user == user %}
+               <td><a href="{% if post.type == '1' %}
+               /news/{{ post.id }}/delete/
+               {% else %}
+               /article/{{ post.id }}/delete/
+               {% endif %}
+               ">Delete
                </a></td>
                {% endif %}
            </tr>

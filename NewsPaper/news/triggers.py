@@ -19,7 +19,7 @@ def send_notification(html_content, subscriber, subject):
     server.send_message(msg)
 
 
-@receiver(m2m_changed, sender=PostCategory) #Для проверки D10.5 закомментировать
+#@receiver(m2m_changed, sender=PostCategory) #Для проверки D10.5 закомментировать
 def notify_new_post(instance, **kwargs):
     if kwargs['action'] == 'post_add':
         categories = instance.category.all()
