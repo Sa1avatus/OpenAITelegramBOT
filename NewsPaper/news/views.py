@@ -1,15 +1,14 @@
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.shortcuts import render, get_object_or_404, reverse, redirect
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .filters import PostFilter
 from .forms import *
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView, LogoutView, TemplateView
+from django.contrib.auth.views import TemplateView
 from .tasks import *
-import json
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -56,14 +55,15 @@ class PostDetail(DetailView):
         context = super().get_context_data(**kwargs)
         context['is_not_authors'] = not self.request.user.groups.filter(name='authors').exists()
         context['user_auth'] = self.request.user.is_authenticated
-        id = self.kwargs.get('pk')
-        post = Post.objects.get(pk=id)
+        post = Post.objects.get(pk=self.kwargs.get('pk'))
         context['categories'] = post.category.all()
         return context
 
     def get_object(self, *args, **kwargs):  # переопределяем метод получения объекта, как ни странно
         obj = cache.get(f'post-{self.kwargs["pk"]}',
-                        None)  # кэш очень похож на словарь, и метод get действует так же. Он забирает значение по ключу, если его нет, то забирает None.
+                        None)
+        # кэш очень похож на словарь, и метод get действует так же.
+        # Он забирает значение по ключу, если его нет, то забирает None.
 
         # если объекта нет в кэше, то получаем его и записываем в кэш
         if not obj:
@@ -152,7 +152,10 @@ def subscribe(request, pk):
     user = request.user
     category = Category.objects.get(id=pk)
     category.subscribers.add(user)
-    return render(request, 'posts/subscribe.html', {'category': category, 'message': 'Вы подписались на категорию' })
+    return render(request,
+                  'posts/subscribe.html',
+                  {'category': category, 'message': 'Вы подписались на категорию' }
+                  )
 
 
 @login_required
@@ -169,6 +172,7 @@ def make_me_author(request):
     author_group = Group.objects.get(name='authors')
     if not request.user.groups.filter(name='authors').exists():
         author_group.user_set.add(user)
+
     if not Author.user == user.id:
         author = Author(user=user)
         author.save()
