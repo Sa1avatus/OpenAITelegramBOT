@@ -31,7 +31,7 @@ class BaseRegisterView(CreateView):
 class PostList(ListView):
     model = Post
     ordering = '-creation'
-    template_name = 'posts/posts.html'
+    template_name = 'posts/news.html'
     context_object_name = 'posts'
     paginate_by = 10
 

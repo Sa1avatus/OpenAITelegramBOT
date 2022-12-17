@@ -22,4 +22,5 @@ urlpatterns = [
     path('', IndexView.as_view()),
     path('subscribe/<int:pk>', subscribe, name='subscribe'),
     path('unsubscribe/<int:pk>', unsubscribe, name='unsubscribe'),
+    path('categories/<int:pk>', CategoryListView.as_view(), name='category_list'),
 ]
