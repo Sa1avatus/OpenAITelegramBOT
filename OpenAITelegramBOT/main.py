@@ -89,10 +89,6 @@ class DialogBot(object):
         return f'{response["choices"][0]["text"]}'
 
 
-    def __str__(self):
-        return self.handler
-
-
 def dialog():
     answer = yield "Выберите модель взаимодействия с ИИ:"
     answer = yield "Напишите, что вы хотите от модели:"
