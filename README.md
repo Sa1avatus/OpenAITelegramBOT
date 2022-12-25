@@ -1,4 +1,4 @@
-# NewsPortal учебный проект по Django
+# OpenAITelegramBOT
 
 ## Установка
 
@@ -10,7 +10,7 @@
 3. Зайдите  в директорию проекта
 
    ```bash
-   $ cd NewsPaper
+   $ cd OpenAITelegramBOT
    ```
 
 4. Создайте виртуальное окружение
@@ -32,16 +32,17 @@
    $ cp .env.example .env
    ```
 
-7. Заполните необходимые данные в созданном файле `.env`
+7. Перейдите по ссылке [BotFather](https://telegram.me/BotFather)  (у вас должно быть установлено приложение Telegram) и создайте нового бота, отправив команду /newbot. Следуйте инструкциям, пока не получите имя пользователя и токен для вашего бота.
 
-8. Запустите приложение
+8. Перейдите по ссылке [OpenAI](https://beta.openai.com/account/api-keys) (вы должны быть зарегистрированы и авторизованы) и создайте ключ API
+
+9. Заполните необходимые данные в созданном файле `.env`
+
+10. Запустите приложение
 
    ```bash
-   $ python manage.py runserver 
-   $ celery -A NewsPaper worker -l INFO -P solo
-   $ celery -A NewsPaper beat -l INFO
+   $ python main.py 
+
    ```
 
 Доступ к порталу будет по ссылке [http://localhost:8000](http://localhost:8000)!
-
-

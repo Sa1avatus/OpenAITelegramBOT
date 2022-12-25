@@ -1,8 +1,0 @@
-django
-django-filter
-django-allauth
-python-dotenv
-django-apscheduler
-celery
-redis
-celery[redis]
