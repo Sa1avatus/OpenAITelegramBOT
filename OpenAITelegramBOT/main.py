@@ -22,7 +22,6 @@ class DialogBot(object):
         self.updater.dispatcher.add_handler(handler1)
         self.updater.dispatcher.add_handler(handler2)  # ставим обработчик всех текстовых сообщений
         self.updater.dispatcher.add_handler(handler3)
-
         self.handlers = collections.defaultdict(generator)  # заводим мапу "id чата -> генератор"
         self.model = None
 
@@ -41,12 +40,10 @@ class DialogBot(object):
         chat_id = update.message.chat_id
         try:
             #print(f'try {self.model}')
-            if self.model == 'model#dalle':
+            if self.model == 'dalle':
                 answer = self.dalle_model(update.message.text)
-            elif self.model == 'model#codex':
-                answer = self.codex_model(update.message.text)
             else:
-                answer = self.gpt3_model(update.message.text)
+                answer = self.gpt3_model(update.message.text, self.model)
         except StopIteration:
             #print(f'StopIteration')
             # если при этом генератор закончился -- что делать, начинаем общение с начала
@@ -61,7 +58,7 @@ class DialogBot(object):
         chat_id = update.callback_query.message.chat_id
         if (update.callback_query.data.split('#')[0] == 'model'):
             #print(f'model: {update.callback_query.data}')
-            model = update.callback_query.data
+            model = update.callback_query.data.split('#')[1]
             dialog_bot.model = model
             answer = f'Напишите, что вы хотите от модели:'
         else:
@@ -71,6 +68,7 @@ class DialogBot(object):
         #print("Answer: %r" % answer)
         context.bot.sendMessage(chat_id=chat_id, text=answer)
         #context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+
 
     def dalle_model(self, text):
         response = openai.Image.create(
@@ -82,25 +80,16 @@ class DialogBot(object):
         #print(f'Response: {response}')
         return image_url
 
-    def codex_model(self, text):
-        response = completion.create(
-            prompt='"""\n{}\n"""'.format(text),
-            model='code-davinci-002',
-            temperature=0.9,
-            max_tokens=3100,
-            top_p=1,
-            frequency_penalty=0.0,
-            presence_penalty=0.6,
-            stop=[" Human:", " AI:"])
-        return f'```python\n{response["choices"][0]["text"]}\n\n\nИспользовалась модель: {response.model}```'
 
-    def gpt3_model(self, text):
+    def gpt3_model(self, text, model):
         #print(f'TEXT: {text}')
+        #print(f'model: {model}')
+        max_tokens = 2048 - len(text) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
-            model='text-davinci-003',
+            model=model,
             temperature=0.9,
-            max_tokens=3100,
+            max_tokens=max_tokens,
             top_p=1,
             frequency_penalty=0.0,
             presence_penalty=0.6,
@@ -115,10 +104,14 @@ def dialog():
     return answer
 
 def get_markup():
-    item1 = telegram.InlineKeyboardButton(f'GPT-3', callback_data=f'model#davinchi')
-    item2 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
-    item3 = telegram.InlineKeyboardButton(f'Codex', callback_data=f'model#codex')
-    keyboard = telegram.InlineKeyboardMarkup([[item1, item2, item3]])
+    item1 = telegram.InlineKeyboardButton(f'GPT-3 Davinchi', callback_data=f'model#text-davinci-003')
+    item2 = telegram.InlineKeyboardButton(f'GPT-3 Curie', callback_data=f'model#text-curie-001')
+    item3 = telegram.InlineKeyboardButton(f'GPT-3 Babbage', callback_data=f'model#text-babbage-001')
+    item4 = telegram.InlineKeyboardButton(f'GPT-3 Ada', callback_data=f'model#text-ada-001')
+    item5 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
+    item6 = telegram.InlineKeyboardButton(f'Codex Davinchi', callback_data=f'model#code-davinci-002')
+    item7 = telegram.InlineKeyboardButton(f'Codex Cushman', callback_data=f'model#code-cushman-001')
+    keyboard = telegram.InlineKeyboardMarkup([[item1, item2, item3, item4], [item6, item7], [item5]])
     return keyboard
 
 
