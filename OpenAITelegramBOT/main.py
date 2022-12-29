@@ -3,7 +3,7 @@ import os
 
 import openai
 from telegram.ext import Filters
-from telegram.ext import MessageHandler, CallbackQueryHandler
+from telegram.ext import MessageHandler, CallbackQueryHandler, CommandHandler
 from telegram.ext import Updater
 import telegram
 from dotenv import load_dotenv
@@ -13,51 +13,50 @@ load_dotenv()
 class DialogBot(object):
     def __init__(self, token, generator):
         self.updater = Updater(token=token)  # заводим апдейтера
-        handler = MessageHandler(Filters.text | Filters.command, self.handle_message)
+        handler1 = MessageHandler(Filters.text & (~Filters.command), self.handle_message)
         handler2 = CallbackQueryHandler(self.handle_callback)
-        self.updater.dispatcher.add_handler(handler)  # ставим обработчик всех текстовых сообщений
-        self.updater.dispatcher.add_handler(handler2)
+        handler3 = CommandHandler('start', self.start_command)
+        self.updater.dispatcher.add_handler(handler1)
+        self.updater.dispatcher.add_handler(handler2)  # ставим обработчик всех текстовых сообщений
+        self.updater.dispatcher.add_handler(handler3)
+
         self.handlers = collections.defaultdict(generator)  # заводим мапу "id чата -> генератор"
         self.model = None
 
     def start(self):
         self.updater.start_polling()
 
+    def start_command(self, update, context):
+        print("Received async def commands", update)
+        chat_id = update.message.chat_id
+        self.handlers.pop(chat_id, None)
+        answer = next(self.handlers[chat_id])
+        context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+
     def handle_message(self, update, context):
         print("Received", update.message)
         chat_id = update.message.chat_id
-        if (update.message.text == '/start'):
-            # если передана команда /start, начинаем всё с начала -- для
-            # этого удаляем состояние текущего чатика, если оно есть
-            self.handlers.pop(chat_id, None)
-            answer = next(self.handlers[chat_id])
-        else:
-            try:
-                print(f'try {self.model}')
-                if self.model == 'model#dalle':
-                    answer = self.dalle_model(update.message.text)
-                elif self.model == 'model#codex':
-                    answer = self.codex_model(update.message.text)
-                else:
-                    answer = self.gpt3_model(update.message.text)
-            except StopIteration:
-                print(f'StopIteration')
-                # если при этом генератор закончился -- что делать, начинаем общение с начала
-                del self.handlers[chat_id]
-                # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
-                return self.handle_message(update, context)
+        try:
+            print(f'try {self.model}')
+            if self.model == 'model#dalle':
+                answer = self.dalle_model(update.message.text)
+            elif self.model == 'model#codex':
+                answer = self.codex_model(update.message.text)
+            else:
+                answer = self.gpt3_model(update.message.text)
+        except StopIteration:
+            print(f'StopIteration')
+            # если при этом генератор закончился -- что делать, начинаем общение с начала
+            del self.handlers[chat_id]
+            # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
+            return self.handle_message(update, context)
         print("Answer: %r" % answer)
         context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def handle_callback(self, update, context):
         print("Received", update.callback_query)
         chat_id = update.callback_query.message.chat_id
-        if (update.callback_query.data == '/start'):
-            # если передана команда /start, начинаем всё с начала -- для
-            # этого удаляем состояние текущего чатика, если оно есть
-            self.handlers.pop(update.message.chat_id, None)
-            answer = next(self.handlers[chat_id])
-        elif (update.callback_query.data.split('#')[0] == 'model'):
+        if (update.callback_query.data.split('#')[0] == 'model'):
             print(f'model: {update.callback_query.data}')
             model = update.callback_query.data
             dialog_bot.model = model
@@ -116,10 +115,7 @@ def get_markup():
     item1 = telegram.InlineKeyboardButton(f'GPT-3', callback_data=f'model#davinchi')
     item2 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
     item3 = telegram.InlineKeyboardButton(f'Codex', callback_data=f'model#codex')
-    #keys = [['model#davinchi','model#dalle','model#codex']]
-    #keyboard = telegram.ReplyKeyboardMarkup(keys)
     keyboard = telegram.InlineKeyboardMarkup([[item1, item2, item3]])
-    #keyboard.add(item1, item2, item3)
     return keyboard
 
 
