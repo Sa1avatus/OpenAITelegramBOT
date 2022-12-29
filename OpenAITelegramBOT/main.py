@@ -2,10 +2,12 @@ import collections
 import os
 import logging
 import openai
+import json
 from telegram.ext import Filters
 from telegram.ext import MessageHandler, CallbackQueryHandler, CommandHandler
 from telegram.ext import Updater
 import telegram
+import redis
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -29,46 +31,43 @@ class DialogBot(object):
         self.updater.start_polling()
 
     def start_command(self, update, context):
-        #print("Received async def commands", update)
         chat_id = update.message.chat_id
         self.handlers.pop(chat_id, None)
         answer = next(self.handlers[chat_id])
         context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def handle_message(self, update, context):
-        #print("Received", update.message)
         chat_id = update.message.chat_id
         try:
-            #print(f'try {self.model}')
-            if self.model == 'dalle':
+            if red:
+                model = red.get(update.message.chat_id).decode("utf-8")
+            else:
+                model = self.model
+
+            if model == 'dalle':
                 answer = self.dalle_model(update.message.text)
             else:
-                answer = self.gpt3_model(update.message.text, self.model)
+                answer = self.gpt3_model(update.message.text, model)
         except StopIteration:
-            #print(f'StopIteration')
             # если при этом генератор закончился -- что делать, начинаем общение с начала
             del self.handlers[chat_id]
             # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
             return self.handle_message(update, context)
-        #print("Answer: %r" % answer)
         context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def handle_callback(self, update, context):
-        #print("Received", update.callback_query)
         chat_id = update.callback_query.message.chat_id
         if (update.callback_query.data.split('#')[0] == 'model'):
-            #print(f'model: {update.callback_query.data}')
             model = update.callback_query.data.split('#')[1]
             dialog_bot.model = model
+            if red:
+                red.set(update.callback_query.message.chat_id, model)
             answer = f'Напишите, что вы хотите от модели:'
         else:
             del self.handlers[chat_id]
             # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
             return self.handle_message(update, context)
-        #print("Answer: %r" % answer)
         context.bot.sendMessage(chat_id=chat_id, text=answer)
-        #context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
-
 
     def dalle_model(self, text):
         response = openai.Image.create(
@@ -77,13 +76,9 @@ class DialogBot(object):
             size="1024x1024"
         )
         image_url = response['data'][0]['url']
-        #print(f'Response: {response}')
         return image_url
 
-
     def gpt3_model(self, text, model):
-        #print(f'TEXT: {text}')
-        #print(f'model: {model}')
         max_tokens = 2048 - len(text) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
@@ -94,14 +89,16 @@ class DialogBot(object):
             frequency_penalty=0.0,
             presence_penalty=0.6,
             stop=[" Human:", " AI:"])
-        #print(f'{response["choices"][0]["text"]}')
-        return f'{response["choices"][0]["text"]}\n\nИспользовалась модель: {response.model}'
+        used_tokens = f'Потрачено токенов: {response["usage"]["total_tokens"]}'
+        used_model = f'Использовалась модель: {response.model}'
+        return f'{response["choices"][0]["text"]}\n\n{used_model}\n{used_tokens}'
 
 
 def dialog():
     answer = yield "Выберите модель взаимодействия с ИИ:"
     #answer = yield "Напишите, что вы хотите от модели:"
     return answer
+
 
 def get_markup():
     item1 = telegram.InlineKeyboardButton(f'GPT-3 Davinchi', callback_data=f'model#text-davinci-003')
@@ -120,6 +117,16 @@ if __name__ == "__main__":
     restart_sequence = "\nHuman: "
     openai.api_key = os.getenv("OPENAI_API_KEY")
     completion = openai.Completion()
+    try:
+        red = redis.Redis(
+            host=os.getenv('REDIS_HOST'),
+            port=int(os.getenv('REDIS_PORT')),
+            password=os.getenv('REDIS_PASSWORD')
+                          )
+        red.ping()
+    except Exception as e:
+        red = None
+        print(f'REDIS Error: {e}')
     token = os.getenv('BOT_TOKEN')
     dialog_bot = DialogBot(token, dialog)
     dialog_bot.start()
