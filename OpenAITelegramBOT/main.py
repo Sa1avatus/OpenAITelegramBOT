@@ -1,6 +1,6 @@
 import collections
 import os
-
+import logging
 import openai
 from telegram.ext import Filters
 from telegram.ext import MessageHandler, CallbackQueryHandler, CommandHandler
@@ -9,7 +9,10 @@ import telegram
 from dotenv import load_dotenv
 load_dotenv()
 
-
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 class DialogBot(object):
     def __init__(self, token, generator):
         self.updater = Updater(token=token)  # заводим апдейтера
@@ -27,17 +30,17 @@ class DialogBot(object):
         self.updater.start_polling()
 
     def start_command(self, update, context):
-        print("Received async def commands", update)
+        #print("Received async def commands", update)
         chat_id = update.message.chat_id
         self.handlers.pop(chat_id, None)
         answer = next(self.handlers[chat_id])
         context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def handle_message(self, update, context):
-        print("Received", update.message)
+        #print("Received", update.message)
         chat_id = update.message.chat_id
         try:
-            print(f'try {self.model}')
+            #print(f'try {self.model}')
             if self.model == 'model#dalle':
                 answer = self.dalle_model(update.message.text)
             elif self.model == 'model#codex':
@@ -45,19 +48,19 @@ class DialogBot(object):
             else:
                 answer = self.gpt3_model(update.message.text)
         except StopIteration:
-            print(f'StopIteration')
+            #print(f'StopIteration')
             # если при этом генератор закончился -- что делать, начинаем общение с начала
             del self.handlers[chat_id]
             # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
             return self.handle_message(update, context)
-        print("Answer: %r" % answer)
+        #print("Answer: %r" % answer)
         context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def handle_callback(self, update, context):
-        print("Received", update.callback_query)
+        #print("Received", update.callback_query)
         chat_id = update.callback_query.message.chat_id
         if (update.callback_query.data.split('#')[0] == 'model'):
-            print(f'model: {update.callback_query.data}')
+            #print(f'model: {update.callback_query.data}')
             model = update.callback_query.data
             dialog_bot.model = model
             answer = f'Напишите, что вы хотите от модели:'
@@ -65,7 +68,7 @@ class DialogBot(object):
             del self.handlers[chat_id]
             # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
             return self.handle_message(update, context)
-        print("Answer: %r" % answer)
+        #print("Answer: %r" % answer)
         context.bot.sendMessage(chat_id=chat_id, text=answer)
         #context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
@@ -76,7 +79,7 @@ class DialogBot(object):
             size="1024x1024"
         )
         image_url = response['data'][0]['url']
-        print(f'Response: {response}')
+        #print(f'Response: {response}')
         return image_url
 
     def codex_model(self, text):
@@ -92,7 +95,7 @@ class DialogBot(object):
         return f'```python\n{response["choices"][0]["text"]}\n\n\nИспользовалась модель: {response.model}```'
 
     def gpt3_model(self, text):
-        print(f'TEXT: {text}')
+        #print(f'TEXT: {text}')
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
             model='text-davinci-003',
@@ -102,7 +105,7 @@ class DialogBot(object):
             frequency_penalty=0.0,
             presence_penalty=0.6,
             stop=[" Human:", " AI:"])
-        print(f'{response["choices"][0]["text"]}')
+        #print(f'{response["choices"][0]["text"]}')
         return f'{response["choices"][0]["text"]}\n\nИспользовалась модель: {response.model}'
 
 
