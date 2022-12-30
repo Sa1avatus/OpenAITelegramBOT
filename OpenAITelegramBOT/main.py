@@ -2,7 +2,6 @@ import collections
 import os
 import logging
 import openai
-import json
 from telegram.ext import Filters
 from telegram.ext import MessageHandler, CallbackQueryHandler, CommandHandler
 from telegram.ext import Updater
@@ -15,6 +14,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
+
 class DialogBot(object):
     def __init__(self, token, generator):
         self.updater = Updater(token=token)  # заводим апдейтера
@@ -25,7 +26,8 @@ class DialogBot(object):
         self.updater.dispatcher.add_handler(handler2)  # ставим обработчик всех текстовых сообщений
         self.updater.dispatcher.add_handler(handler3)
         self.handlers = collections.defaultdict(generator)  # заводим мапу "id чата -> генератор"
-        self.model = None
+        #self.model = None
+        self.chat_options = {}#int(os.getenv('USER_TOKENS')) # число токенов, доступных юзеру
 
     def start(self):
         self.updater.start_polling()
@@ -33,52 +35,86 @@ class DialogBot(object):
     def start_command(self, update, context):
         chat_id = update.message.chat_id
         self.handlers.pop(chat_id, None)
+        if not self.get_tokens(chat_id):
+            if red:
+                red.hset(chat_id, 'tokens', os.getenv('USER_TOKENS'))
+            else:
+                self.chat_options[chat_id] = {'tokens': os.getenv('USER_TOKENS')}
         answer = next(self.handlers[chat_id])
         context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+
+    def get_model(self, chat_id):
+        if red:
+            model = red.hget(chat_id, 'model').decode("utf-8")
+        else:
+            model = self.chat_options[chat_id]['model']
+        return model
+
+    def get_tokens(self, chat_id):
+        try:
+            if red:
+                tokens = red.hget(chat_id, 'tokens').decode("utf-8")
+            else:
+                tokens = self.chat_options[chat_id]['tokens']
+        except Exception as e:
+            tokens = None
+        return tokens
+
+    def get_redis_value(self, key, value):
+        try:
+            str_value = red.hget(key, value).decode("utf-8")
+            return str_value
+        except Exception as e:
+            return None
+
+    def set_redis_value(self, key, value1, value2):
+        try:
+            red.hset(key, value1, value2)
+        except Exception as e:
+            return None
 
     def handle_message(self, update, context):
         chat_id = update.message.chat_id
         try:
-            if red:
-                model = red.get(update.message.chat_id).decode("utf-8")
+            if int(self.get_tokens(chat_id)) > 0:
+                model = self.get_model(chat_id)
+                if model == 'dalle':
+                    answer = self.dalle_model(chat_id, update.message.text)
+                else:
+                    answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
-                model = self.model
-
-            if model == 'dalle':
-                answer = self.dalle_model(update.message.text)
-            else:
-                answer = self.gpt3_model(update.message.text, model)
-        except StopIteration:
-            # если при этом генератор закончился -- что делать, начинаем общение с начала
-            del self.handlers[chat_id]
-            # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
-            return self.handle_message(update, context)
-        context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+                answer = 'У вас закончились токены!'
+        except Exception as e:
+            print(e.__str__())
+            return self.start_command(update, context)
+        context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     def handle_callback(self, update, context):
         chat_id = update.callback_query.message.chat_id
         if (update.callback_query.data.split('#')[0] == 'model'):
             model = update.callback_query.data.split('#')[1]
-            dialog_bot.model = model
             if red:
-                red.set(update.callback_query.message.chat_id, model)
+                red.hset(chat_id, "model", model)
+            else:
+                if not self.chat_options.get(chat_id):
+                    self.chat_options[chat_id] = {'tokens': os.getenv('USER_TOKENS')}
+                self.chat_options[chat_id].update({'model': model})
             answer = f'Напишите, что вы хотите от модели:'
         else:
-            del self.handlers[chat_id]
-            # (повторно вызванный, этот метод будет думать, что пользователь с нами впервые)
-            return self.handle_message(update, context)
+            return self.start_command(update, context)
         context.bot.sendMessage(chat_id=chat_id, text=answer)
 
-    def dalle_model(self, text):
+    def dalle_model(self, chat_id, text):
         response = openai.Image.create(
             prompt=text,
             n=1,
             size="1024x1024"
         )
         image_url = response['data'][0]['url']
-        return image_url
+        str_text = self.get_text_model_usage(chat_id, 'DALL*E', 20000) #цена 1 картинки в ДАЛЛИ 2 цента
+        return f'{image_url}\n\n{str_text}'
 
-    def gpt3_model(self, text, model):
+    def gpt3_model(self, chat_id, text, model):
         max_tokens = 2048 - len(text) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
@@ -89,9 +125,30 @@ class DialogBot(object):
             frequency_penalty=0.0,
             presence_penalty=0.6,
             stop=[" Human:", " AI:"])
-        used_tokens = f'Потрачено токенов: {response["usage"]["total_tokens"]}'
-        used_model = f'Использовалась модель: {response.model}'
-        return f'{response["choices"][0]["text"]}\n\n{used_model}\n{used_tokens}'
+        used_tokens = int(response["usage"]["total_tokens"])
+        if response.model == 'text-davinci-003':
+            used_tokens = used_tokens * 20 #цена 1к токена в Давинчи 2 цента
+        elif response.model == 'text-curie-001':
+            used_tokens = used_tokens * 2 #цена 1к токена в Curie 0.2 цента
+        elif response.model == 'text-babbage-001': #цена 1к токена в Babbage 0.05 цента
+            used_tokens = int(used_tokens / 2)
+        elif response.model == 'text-ada-001': #цена 1к токена в Babbage 0.04 цента
+            used_tokens = int(used_tokens / 2.5)
+        else:
+            used_tokens = used_tokens
+        str_text = self.get_text_model_usage(chat_id, model, used_tokens)
+        return f'{response["choices"][0]["text"]}\n\n{str_text}'
+
+    def get_text_model_usage(self, chat_id, model, used_tokens):
+        tokens = int(self.get_tokens(chat_id))
+        if red:
+            self.set_redis_value(chat_id, 'tokens', tokens - used_tokens)
+        else:
+            self.chat_options[chat_id]['tokens'] = int(self.chat_options[chat_id]['tokens']) - int(used_tokens)
+        used_model = f'Использовалась модель: {model}'
+        used_tokens_str = f'Потрачено токенов: {used_tokens}'
+        remain_tokens_str = f'Остаток токенов: {tokens - used_tokens}'
+        return f'{used_model}\n{used_tokens_str}\n{remain_tokens_str}'
 
 
 def dialog():
@@ -108,7 +165,7 @@ def get_markup():
     item5 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
     item6 = telegram.InlineKeyboardButton(f'Codex Davinchi', callback_data=f'model#code-davinci-002')
     item7 = telegram.InlineKeyboardButton(f'Codex Cushman', callback_data=f'model#code-cushman-001')
-    keyboard = telegram.InlineKeyboardMarkup([[item1, item2, item3, item4], [item6, item7], [item5]])
+    keyboard = telegram.InlineKeyboardMarkup([[item1, item2], [item3, item4], [item6, item7], [item5]])
     return keyboard
 
 
