@@ -1,4 +1,4 @@
-python-telegram-bot==13.12
+python-telegram-bot==20.0b0
 python-dotenv==0.20.0
 openai
 redis

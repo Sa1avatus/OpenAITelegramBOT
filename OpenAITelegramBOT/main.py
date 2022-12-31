@@ -2,15 +2,16 @@ import collections
 import os
 import logging
 import openai
-from telegram.ext import Filters
-from telegram.ext import MessageHandler, CallbackQueryHandler, CommandHandler
-from telegram.ext import Updater
+from telegram.ext import filters
+from telegram.ext import MessageHandler, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler
 import telegram
 import redis
 from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
+    filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
@@ -18,30 +19,31 @@ logging.basicConfig(
 
 class DialogBot(object):
     def __init__(self, token, generator):
-        self.updater = Updater(token=token)  # заводим апдейтера
-        handler1 = MessageHandler(Filters.text & (~Filters.command), self.handle_message)
+        self.application = Application.builder().token(token).build()  # заводим апдейтера
+        handler1 = MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_message)
         handler2 = CallbackQueryHandler(self.handle_callback)
         handler3 = CommandHandler('start', self.start_command)
-        self.updater.dispatcher.add_handler(handler1)
-        self.updater.dispatcher.add_handler(handler2)  # ставим обработчик всех текстовых сообщений
-        self.updater.dispatcher.add_handler(handler3)
+        self.application.add_handler(handler1)
+        self.application.add_handler(handler2)  # ставим обработчик всех текстовых сообщений
+        self.application.add_handler(handler3)
         self.handlers = collections.defaultdict(generator)  # заводим мапу "id чата -> генератор"
         #self.model = None
         self.chat_options = {}#int(os.getenv('USER_TOKENS')) # число токенов, доступных юзеру
 
     def start(self):
-        self.updater.start_polling()
+        self.application.run_polling()
 
-    def start_command(self, update, context):
+    async def start_command(self, update, context):
         chat_id = update.message.chat_id
         self.handlers.pop(chat_id, None)
         if not self.get_tokens(chat_id):
             if red:
                 red.hset(chat_id, 'tokens', os.getenv('USER_TOKENS'))
+                red.hset(chat_id, 'user', update.message.chat.username)
             else:
                 self.chat_options[chat_id] = {'tokens': os.getenv('USER_TOKENS')}
         answer = next(self.handlers[chat_id])
-        context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+        await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def get_model(self, chat_id):
         if red:
@@ -73,7 +75,7 @@ class DialogBot(object):
         except Exception as e:
             return None
 
-    def handle_message(self, update, context):
+    async def handle_message(self, update, context):
         chat_id = update.message.chat_id
         try:
             if int(self.get_tokens(chat_id)) > 0:
@@ -87,9 +89,12 @@ class DialogBot(object):
         except Exception as e:
             print(e.__str__())
             return self.start_command(update, context)
-        context.bot.sendMessage(chat_id=chat_id, text=answer)
+        if red:
+            red.hset(chat_id, 'last_answer', answer)
+            red.hset(update.update_id, 'quote', answer)
+        await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
-    def handle_callback(self, update, context):
+    async def handle_callback(self, update, context):
         chat_id = update.callback_query.message.chat_id
         if (update.callback_query.data.split('#')[0] == 'model'):
             model = update.callback_query.data.split('#')[1]
@@ -102,7 +107,10 @@ class DialogBot(object):
             answer = f'Напишите, что вы хотите от модели:'
         else:
             return self.start_command(update, context)
-        context.bot.sendMessage(chat_id=chat_id, text=answer)
+        if red:
+            red.hset(chat_id, 'last_quote', answer)
+            red.hset(update.update_id, 'answer', answer)
+        await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     def dalle_model(self, chat_id, text):
         response = openai.Image.create(
