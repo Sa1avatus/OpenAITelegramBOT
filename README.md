@@ -25,6 +25,11 @@
    ```bash
    $ pip install -r requirements.txt
    ```
+   
+   Если не установился модуль python-telegram-bot, то установите его вручную:
+   ```bash
+   pip install python-telegram-bot -U --pre
+   ```
 
 6. Создайте копию файла окружения .env
 
