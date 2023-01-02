@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
-    filename='log_file.log',
+    #filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
@@ -33,51 +33,43 @@ class DialogBot(object):
 
     async def start_command(self, update, context):
         chat_id = update.message.chat_id
-        if not self.get_tokens(chat_id):
-            if red:
-                red.hset(chat_id, 'tokens', os.getenv('USER_TOKENS'))
-                red.hset(chat_id, 'user', update.message.chat.username)
-            else:
-                self.chat_options[chat_id] = {'tokens': os.getenv('USER_TOKENS')}
-        tokens = int(self.get_tokens(chat_id))
+        self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS')) #TEST!!!
+        self.set_value(chat_id, 'conversation', '')
+        if not self.get_value(chat_id, 'tokens'):
+            self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS'))
+            self.set_value(chat_id, 'user', update.message.chat.username)
+        tokens = int(self.get_value(chat_id, 'tokens'))
         answer = f'вам доступно {tokens if tokens > 0 else 0} токенов.\nВыберите модель взаимодействия с ИИ:'
         await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
-    def get_model(self, chat_id):
-        if red:
-            model = red.hget(chat_id, 'model').decode("utf-8")
-        else:
-            model = self.chat_options[chat_id]['model']
-        return model
-
-    def get_tokens(self, chat_id):
+    def get_value(self, key, value):
         try:
             if red:
-                tokens = red.hget(chat_id, 'tokens').decode("utf-8")
+                str_value = red.hget(key, value).decode("utf-8")
             else:
-                tokens = self.chat_options[chat_id]['tokens']
+                str_value = self.chat_options[key].get(value)
         except Exception as e:
-            tokens = None
-        return tokens
+            str_value = None
+        return str_value
 
-    def get_redis_value(self, key, value):
+    def set_value(self, key, value1, value2):
         try:
-            str_value = red.hget(key, value).decode("utf-8")
-            return str_value
+            if red:
+                red.hset(key, value1, value2)
+            else:
+                self.chat_options[key].update({value1: value2})
         except Exception as e:
-            return None
-
-    def set_redis_value(self, key, value1, value2):
-        try:
-            red.hset(key, value1, value2)
-        except Exception as e:
-            return None
+            pass
+        return None
 
     async def handle_message(self, update, context):
         chat_id = update.message.chat_id
+        str_conv = self.get_value(chat_id, 'conversation')
+        str_conv = f'{str_conv}\n{update.message.text}'
+        self.set_value(chat_id, 'conversation', str_conv)
         try:
-            if int(self.get_tokens(chat_id)) > 0:
-                model = self.get_model(chat_id)
+            if int(self.get_value(chat_id, 'tokens')) > 0:
+                model = self.get_value(chat_id, 'model')
                 if model == 'dalle':
                     answer = self.dalle_model(chat_id, update.message.text)
                 else:
@@ -85,32 +77,20 @@ class DialogBot(object):
             else:
                 answer = 'У вас закончились токены!'
         except Exception as e:
-            print(e.__str__())
             return self.start_command(update, context)
-        if red:
-            red.hset(chat_id, 'last_answer', answer)
-            red.hset(update.update_id, 'quote', answer)
         await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     async def handle_callback(self, update, context):
         chat_id = update.callback_query.message.chat_id
-        if int(self.get_tokens(chat_id)) <= 0:
+        if int(self.get_value(chat_id, 'tokens')) <= 0:
             answer = 'У вас закончились токены!'
         else:
             if (update.callback_query.data.split('#')[0] == 'model'):
                 model = update.callback_query.data.split('#')[1]
-                if red:
-                    red.hset(chat_id, "model", model)
-                else:
-                    if not self.chat_options.get(chat_id):
-                        self.chat_options[chat_id] = {'tokens': os.getenv('USER_TOKENS')}
-                    self.chat_options[chat_id].update({'model': model})
+                self.set_value(chat_id, 'model', model)
                 answer = f'Напишите, что вы хотите от модели:'
             else:
                 return self.start_command(update, context)
-            if red:
-                red.hset(chat_id, 'last_quote', answer)
-                red.hset(update.update_id, 'answer', answer)
         await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     def dalle_model(self, chat_id, text):
@@ -125,6 +105,8 @@ class DialogBot(object):
         return f'{image_url}\n\n{str_text}'
 
     def gpt3_model(self, chat_id, text, model):
+        str_conv = self.get_value(chat_id, 'conversation')
+        text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < 1000 else f'{str_conv}\n{text}'[-1000:]
         max_tokens = 2048 - len(text) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
@@ -137,7 +119,11 @@ class DialogBot(object):
             stop=[" Human:", " AI:"])
         used_tokens = self.get_used_tokens(chat_id, model, response["usage"]["total_tokens"])
         str_text = self.get_text_model_usage(chat_id, model, used_tokens)
-        return f'{response["choices"][0]["text"]}\n\n{str_text}'
+        str_response = response["choices"][0]["text"]
+        str_conv = f'{str_conv}\n{str_response}'
+        self.set_value(chat_id, 'conversation', str_conv)
+        #print(f'str_conv: {str_conv}')
+        return f'{str_response}\n\n{str_text}'
 
     def get_used_tokens(self, chat_id, model, used_tokens):
         if model == 'text-davinci-003':
@@ -152,15 +138,12 @@ class DialogBot(object):
             used_tokens = 20000   #цена 1 картинки в ДАЛЛИ 2 цента
         else:
             used_tokens = used_tokens
-        tokens = int(self.get_tokens(chat_id))
-        if red:
-            self.set_redis_value(chat_id, 'tokens', tokens - used_tokens)
-        else:
-            self.chat_options[chat_id]['tokens'] = int(self.chat_options[chat_id]['tokens']) - int(used_tokens)
+        tokens = int(self.get_value(chat_id, 'tokens'))
+        self.set_value(chat_id, 'tokens', tokens - used_tokens)
         return used_tokens
 
     def get_text_model_usage(self, chat_id, model, used_tokens):
-        tokens = int(self.get_tokens(chat_id))
+        tokens = int(self.get_value(chat_id, 'tokens'))
         used_model = f'Использовалась модель: {model}'
         used_tokens_str = f'Потрачено токенов: {used_tokens}'
         remain_tokens_str = f'Остаток токенов: {tokens if tokens > 0 else 0}'
