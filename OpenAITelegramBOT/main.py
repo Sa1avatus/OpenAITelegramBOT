@@ -19,23 +19,20 @@ logging.basicConfig(
 
 class DialogBot(object):
     def __init__(self, token):
-        self.application = Application.builder().token(token).build()  # заводим апдейтера
+        self.application = Application.builder().token(token).build()
         handler1 = MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_message)
         handler2 = CallbackQueryHandler(self.handle_callback)
         handler3 = CommandHandler('start', self.start_command)
         self.application.add_handler(handler1)
-        self.application.add_handler(handler2)  # ставим обработчик всех текстовых сообщений
+        self.application.add_handler(handler2)
         self.application.add_handler(handler3)
-        #self.handlers = collections.defaultdict(generator)  # заводим мапу "id чата -> генератор"
-        #self.model = None
-        self.chat_options = {}#int(os.getenv('USER_TOKENS')) # число токенов, доступных юзеру
+        self.chat_options = {}
 
     def start(self):
         self.application.run_polling()
 
     async def start_command(self, update, context):
         chat_id = update.message.chat_id
-        #self.handlers.pop(chat_id, None)
         if not self.get_tokens(chat_id):
             if red:
                 red.hset(chat_id, 'tokens', os.getenv('USER_TOKENS'))
@@ -43,7 +40,7 @@ class DialogBot(object):
             else:
                 self.chat_options[chat_id] = {'tokens': os.getenv('USER_TOKENS')}
         tokens = int(self.get_tokens(chat_id))
-        answer = f'вам доступно {tokens} токенов.\nВыберите модель взаимодействия с ИИ:'#next(self.handlers[chat_id])
+        answer = f'вам доступно {tokens if tokens > 0 else 0} токенов.\nВыберите модель взаимодействия с ИИ:'
         await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
 
     def get_model(self, chat_id):
