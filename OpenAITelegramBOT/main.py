@@ -1,4 +1,3 @@
-import collections
 import os
 import logging
 import openai
@@ -11,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
-    #filename='log_file.log',
+    filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
@@ -122,7 +121,7 @@ class DialogBot(object):
         str_response = response["choices"][0]["text"]
         str_conv = f'{str_conv}\n{str_response}'
         self.set_value(chat_id, 'conversation', str_conv)
-        #print(f'str_conv: {str_conv}')
+        print(f'str_conv: {str_conv}')
         return f'{str_response}\n\n{str_text}'
 
     def get_used_tokens(self, chat_id, model, used_tokens):
@@ -163,8 +162,6 @@ def get_markup():
 
 
 if __name__ == "__main__":
-    start_sequence = "\nAI:"
-    restart_sequence = "\nHuman: "
     openai.api_key = os.getenv("OPENAI_API_KEY")
     completion = openai.Completion()
     try:
