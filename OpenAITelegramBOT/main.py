@@ -33,7 +33,7 @@ class DialogBot(object):
 
     async def start_command(self, update, context):
         chat_id = update.message.chat_id
-        self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS')) #TEST!!!
+        #self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS')) #TEST!!!
         self.set_value(chat_id, 'conversation', '')
         if not self.get_value(chat_id, 'tokens'):
             self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS'))
