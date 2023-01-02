@@ -166,7 +166,7 @@ class DialogBot(object):
         tokens = int(self.get_tokens(chat_id))
         used_model = f'Использовалась модель: {model}'
         used_tokens_str = f'Потрачено токенов: {used_tokens}'
-        remain_tokens_str = f'Остаток токенов: {tokens - used_tokens if tokens - used_tokens > 0 else 0}'
+        remain_tokens_str = f'Остаток токенов: {tokens if tokens > 0 else 0}'
         return f'{used_model}\n{used_tokens_str}\n{remain_tokens_str}'
 
 
