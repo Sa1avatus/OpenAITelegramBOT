@@ -1,6 +1,6 @@
 # OpenAITelegramBOT
 
-[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/Sa1avatus/OpenAITelegramBOT/edit/main/README.md)
+[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/Sa1avatus/OpenAITelegramBOT/blob/main/README.md)
 [![ru](https://img.shields.io/badge/lang-ru-green.svg)](https://github.com/Sa1avatus/OpenAITelegramBOT/blob/main/README.ru.md)
 
 ## Установка
