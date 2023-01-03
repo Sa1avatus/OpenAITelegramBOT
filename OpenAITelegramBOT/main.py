@@ -133,7 +133,7 @@ class DialogBot(object):
             used_tokens = int(used_tokens / 2) #цена 1к токена в Babbage 0.05 цента
         elif model == 'text-ada-001':
             used_tokens = int(used_tokens / 2.5) #цена 1к токена в Babbage 0.04 цента
-        elif model == 'DALL*E':
+        elif model == 'dalle':
             used_tokens = 20000   #цена 1 картинки в ДАЛЛИ 2 цента
         else:
             used_tokens = used_tokens
