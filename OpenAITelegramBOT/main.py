@@ -6,6 +6,7 @@ from telegram.ext import MessageHandler, CallbackQueryHandler
 from telegram.ext import Application, CommandHandler
 import telegram
 import redis
+from settings import main as s
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -22,24 +23,49 @@ class DialogBot(object):
         handler1 = MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_message)
         handler2 = CallbackQueryHandler(self.handle_callback)
         handler3 = CommandHandler('start', self.start_command)
+        handler4 = CommandHandler('help', self.help_command)
+        handler5 = CommandHandler('lang', self.lang_command)
         self.application.add_handler(handler1)
         self.application.add_handler(handler2)
         self.application.add_handler(handler3)
+        self.application.add_handler(handler4)
+        self.application.add_handler(handler5)
         self.chat_options = {}
 
     def start(self):
         self.application.run_polling()
 
+    async def lang_command(self, update, context):
+        chat_id = update.message.chat_id
+        item1 = telegram.InlineKeyboardButton(f'🇷🇺 Русский', callback_data=f'lang#RU')
+        item2 = telegram.InlineKeyboardButton(f'🇬🇧 English', callback_data=f'lang#EN')
+        keyboard = telegram.InlineKeyboardMarkup([[item1, item2]])
+        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        answer = s.LANG_MESSAGE.get(lang)
+        await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=keyboard)
+
     async def start_command(self, update, context):
         chat_id = update.message.chat_id
+        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        #red.flushdb() #TEST!!!
         #self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS')) #TEST!!!
         self.set_value(chat_id, 'conversation', '')
         if not self.get_value(chat_id, 'tokens'):
             self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS'))
             self.set_value(chat_id, 'user', update.message.chat.username)
-        tokens = int(self.get_value(chat_id, 'tokens'))
-        answer = f'вам доступно {tokens if tokens > 0 else 0} токенов.\nВыберите модель взаимодействия с ИИ:'
-        await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+        if not self.get_value(chat_id, 'lang'):
+            await self.lang_command(update, context)
+        else:
+            tokens = int(self.get_value(chat_id, 'tokens')) if int(self.get_value(chat_id, 'tokens')) > 0 else 0
+            answer = s.START_MESSAGE[lang].replace('%tokens%', str(tokens))
+            await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+
+    async def help_command(self, update, context):
+        chat_id = update.message.chat_id
+        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        text = s.HELP_MESSAGE.get(lang)
+        answer = f'{text}'
+        await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     def get_value(self, key, value):
         try:
@@ -63,6 +89,7 @@ class DialogBot(object):
 
     async def handle_message(self, update, context):
         chat_id = update.message.chat_id
+        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         str_conv = self.get_value(chat_id, 'conversation')
         str_conv = f'{str_conv}\n{update.message.text}'
         self.set_value(chat_id, 'conversation', str_conv)
@@ -74,23 +101,30 @@ class DialogBot(object):
                 else:
                     answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
-                answer = 'У вас закончились токены!'
+                answer = s.NO_TOKENS[lang]
         except Exception as e:
             return self.start_command(update, context)
         await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     async def handle_callback(self, update, context):
         chat_id = update.callback_query.message.chat_id
+        reply_markup = None
+        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         if int(self.get_value(chat_id, 'tokens')) <= 0:
-            answer = 'У вас закончились токены!'
+            answer = s.NO_TOKENS[lang]
         else:
             if (update.callback_query.data.split('#')[0] == 'model'):
                 model = update.callback_query.data.split('#')[1]
                 self.set_value(chat_id, 'model', model)
-                answer = f'Напишите, что вы хотите от модели:'
+                answer = s.ASK_MODEL[lang]
+            elif (update.callback_query.data.split('#')[0] == 'lang'):
+                lang = update.callback_query.data.split('#')[1]
+                self.set_value(chat_id, 'lang', lang)
+                answer = s.START_MESSAGE[lang].replace('%tokens%', self.get_value(chat_id, 'tokens'))
+                reply_markup = get_markup()
             else:
-                return self.start_command(update, context)
-        await context.bot.sendMessage(chat_id=chat_id, text=answer)
+                answer = 'Else'
+        await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=reply_markup)
 
     def dalle_model(self, chat_id, text):
         response = openai.Image.create(
@@ -121,7 +155,7 @@ class DialogBot(object):
         str_response = response["choices"][0]["text"]
         str_conv = f'{str_conv}\n{str_response}'
         self.set_value(chat_id, 'conversation', str_conv)
-        print(f'str_conv: {str_conv}')
+        #print(f'str_conv: {str_conv}')
         return f'{str_response}\n\n{str_text}'
 
     def get_used_tokens(self, chat_id, model, used_tokens):
@@ -142,10 +176,11 @@ class DialogBot(object):
         return used_tokens
 
     def get_text_model_usage(self, chat_id, model, used_tokens):
+        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         tokens = int(self.get_value(chat_id, 'tokens'))
-        used_model = f'Использовалась модель: {model}'
-        used_tokens_str = f'Потрачено токенов: {used_tokens}'
-        remain_tokens_str = f'Остаток токенов: {tokens if tokens > 0 else 0}'
+        used_model = f'{s.USED_MODEL[lang]} {model}'
+        used_tokens_str = f'{s.USED_TOKENS[lang]} {used_tokens}'
+        remain_tokens_str = f'{s.REMAIN_TOKENS[lang]} {tokens if tokens > 0 else 0}'
         return f'{used_model}\n{used_tokens_str}\n{remain_tokens_str}'
 
 
