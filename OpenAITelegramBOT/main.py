@@ -19,6 +19,14 @@ logging.basicConfig(
 
 class DialogBot(object):
     def __init__(self, token):
+        '''
+        This is the constructor for the DialogBot class.
+        It takes in one argument, token, which is the token for the Telegram bot.
+        It creates an instance of the Application class from the telegram.ext library and sets the token for the bot.
+        It then creates five MessageHandler and CallbackQueryHandler objects, each with a different command or filter,
+        and adds them to the application object.
+        :param token: Telegram bot token
+        '''
         self.application = Application.builder().token(token).build()
         handler1 = MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_message)
         handler2 = CallbackQueryHandler(self.handle_callback)
@@ -33,9 +41,28 @@ class DialogBot(object):
         self.chat_options = {}
 
     def start(self):
+        '''
+        This method starts the bot by running the run_polling() method on the application object.
+        This causes the bot to start listening for updates from Telegram.
+        '''
         self.application.run_polling()
 
+
     async def lang_command(self, update, context):
+        '''
+        This method is used when the command '/lang' is received by the bot.
+        It takes in two arguments: update and context.
+        update is an object that contains information about the update received by the bot,
+        and context is an object that contains information about the context in which the update was received.
+        It first retrieves the chat_id of the user who sent the command.
+        Then it creates two InlineKeyboardButton objects for the languages Russian and English,
+        and creates an InlineKeyboardMarkup object using these buttons.
+        It then checks if the user has previously selected a language and uses that language as the default,
+        otherwise it defaults to English.
+        It then sends a message to the user with the option to select a language and the reply markup.
+        :param update: Update object containing the lang command
+        :param context: Context object containing the context of the lang command
+        '''
         chat_id = update.message.chat_id
         item1 = telegram.InlineKeyboardButton(f'🇷🇺 Русский', callback_data=f'lang#RU')
         item2 = telegram.InlineKeyboardButton(f'🇬🇧 English', callback_data=f'lang#EN')
@@ -45,6 +72,22 @@ class DialogBot(object):
         await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=keyboard)
 
     async def start_command(self, update, context):
+        '''
+        This method is used when the command '/start' is received by the bot. It takes in two arguments:
+        update and context. update is an object that contains information about the update received by the bot,
+        and context is an object that contains information about the context in which the update was received.
+        It first retrieves the chat_id of the user who sent the command.
+        Then it checks if the user has previously selected a language and uses that language as the default,
+        otherwise it defaults to English. It then sets the 'conversation' field to an empty string.
+        If the user has not set a number of tokens yet,
+        it sets that field to the number of tokens specified in the .env file,
+        and also sets the 'user' field to the username of the chat.
+        If the user has not set a language yet it calls the lang_command method,
+        otherwise it retrieves the number of tokens the user has and sends a message
+        to the user with the number of tokens they have and some options.
+        :param update: Update object containing the start command
+        :param context: Context object containing the context of the start command
+        '''
         chat_id = update.message.chat_id
         lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         #red.flushdb() #TEST!!!
@@ -58,9 +101,21 @@ class DialogBot(object):
         else:
             tokens = int(self.get_value(chat_id, 'tokens')) if int(self.get_value(chat_id, 'tokens')) > 0 else 0
             answer = s.START_MESSAGE[lang].replace('%tokens%', str(tokens))
-            await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup())
+            await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup(tokens))
 
     async def help_command(self, update, context):
+        '''
+        This method is used when the command '/help' is received by the bot.
+        It takes in two arguments: update and context.
+        update is an object that contains information about the update received by the bot,
+        and context is an object that contains information about the context in which the update was received.
+        It first retrieves the chat_id of the user who sent the command.
+        Then it checks if the user has previously selected a language and uses that language as the default,
+        otherwise it defaults to English.
+        It then retrieves the help message for the selected language and sends it to the user as a message.
+        :param update: Update object containing the help command
+        :param context: Context object containing the context of the help command
+        '''
         chat_id = update.message.chat_id
         lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         text = s.HELP_MESSAGE.get(lang)
@@ -68,6 +123,14 @@ class DialogBot(object):
         await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     def get_value(self, key, value):
+        '''
+        This function is used to retrieve a value stored in the chat_options dictionary for a specific chat,
+        identified by its chat_id. It takes in two arguments:
+        chat_id and key. It returns the value of the key from the dictionary.
+        :param chat_id: Chat id for which the value is to be returned
+        :param key: Key for which the value is to be returned
+        :return: Value for the given key
+        '''
         try:
             if red:
                 str_value = red.hget(key, value).decode("utf-8")
@@ -78,6 +141,16 @@ class DialogBot(object):
         return str_value
 
     def set_value(self, key, value1, value2):
+        '''
+        This function is used to set a value in the chat_options dictionary for a specific chat,
+        identified by its chat_id.
+        It takes in three arguments: chat_id, key, and value.
+        It assigns the value to the key in the dictionary.
+        If the chat_id is not in the chat_options it creates an empty dictionary.
+        :param chat_id: Chat id for which the value is to be set
+        :param key: Key for which the value is to be set
+        :param value: Value to be set
+        '''
         try:
             if red:
                 red.hset(key, value1, value2)
@@ -88,6 +161,21 @@ class DialogBot(object):
         return None
 
     async def handle_message(self, update, context):
+        '''
+        This method handles incoming messages that are not commands. It takes in two arguments:
+        update and context. update is an object that contains information about the update received by the bot,
+        and context is an object that contains information about the context in which the update was received.
+        It first retrieves the chat_id of the user who sent the message and checks if the user has previously
+        selected a language and uses that language as the default, otherwise it defaults to English.
+        It then retrieves the current conversation of the user, and append the received message to it.
+        Then it checks if the user has enough tokens to use the selected model,
+        if the user has enough tokens it calls the selected model to generate a response.
+        If the user doesn't have enough tokens it sends a message telling the user that they don't have enough tokens.
+        In case of any exception occurred, it calls the start_command method to start a new conversation.
+        Finally, it sends the response generated by the selected model to the user.
+        :param update: Update object containing the message
+        :param context: Context object containing the context of the message
+        '''
         chat_id = update.message.chat_id
         lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         str_conv = self.get_value(chat_id, 'conversation')
@@ -107,10 +195,29 @@ class DialogBot(object):
         await context.bot.sendMessage(chat_id=chat_id, text=answer)
 
     async def handle_callback(self, update, context):
+        '''
+        This method handles incoming callback queries,
+        which are triggered by the user interacting with inline keyboard buttons.
+        It takes in two arguments: update and context.
+        update is an object that contains information about the update received by the bot,
+        and context is an object that contains information about the context in which the update was received.
+        It first retrieves the chat_id of the user who sent the callback query and checks
+        if the user has previously selected a language and uses that language as the default,
+        otherwise it defaults to English. Then it checks if the user has enough tokens to proceed.
+        If the user doesn't have enough tokens it sends a message telling the user that they don't have enough tokens.
+        If the user has enough tokens it checks the callback data to determine the action taken by the user.
+        If the user selected a model, it sets the selected model for the user and sends
+        a message asking for the user's input.
+        If the user selected a language, it sets the selected language for the user and sends
+        a message with the current token balance and a markup to select the model.
+        :param update: Update object containing the callback query
+        :param context: Context object containing the context of the callback query
+        '''
         chat_id = update.callback_query.message.chat_id
         reply_markup = None
         lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
-        if int(self.get_value(chat_id, 'tokens')) <= 0:
+        tokens = int(self.get_value(chat_id, 'tokens'))
+        if tokens <= 0:
             answer = s.NO_TOKENS[lang]
         else:
             if (update.callback_query.data.split('#')[0] == 'model'):
@@ -121,12 +228,26 @@ class DialogBot(object):
                 lang = update.callback_query.data.split('#')[1]
                 self.set_value(chat_id, 'lang', lang)
                 answer = s.START_MESSAGE[lang].replace('%tokens%', self.get_value(chat_id, 'tokens'))
-                reply_markup = get_markup()
+                reply_markup = get_markup(tokens)
             else:
                 answer = 'Else'
         await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=reply_markup)
 
     def dalle_model(self, chat_id, text):
+        '''
+        This method is used to generate an image from the DALL-E model.
+        It takes in two arguments: chat_id and text.
+        chat_id is the unique identifier of the user who sent the message and text is the text input provided by the user.
+        It uses the openai.Image.create() method to generate an image
+        based on the text input and with the parameters n=1 and size="1024x1024".
+        It then retrieves the url of the generated image and saves it to the variable image_url.
+        It then calls the function get_used_tokens(self, chat_id, 'DALL*E', 20000)
+        to calculate the used token for DALL-E model and get_text_model_usage(self, chat_id, 'DALL*E', used_tokens)
+        to get the usage message and returns a string containing the image url and usage message.
+        :param chat_id: Telegram chat id
+        :param text: Input text for the DALL-E model
+        :return: String containing the url of the generated image and the information about the model and token usage
+        '''
         response = openai.Image.create(
             prompt=text,
             n=1,
@@ -138,6 +259,23 @@ class DialogBot(object):
         return f'{image_url}\n\n{str_text}'
 
     def gpt3_model(self, chat_id, text, model):
+        '''
+        This method is used to generate text from the GPT-3 model. It takes in three arguments: chat_id, text, and model.
+        It first retrieves the current conversation from the Redis store using the
+        get_value(self, chat_id, 'conversation') method and concatenates it with the new text input.
+        It then limits the length of the text to 1000 characters if the length is more than 1000.
+        It uses the completion.create() method to generate text based on the input text, the selected model,
+        temperature, max_tokens, top_p, frequency_penalty, presence_penalty and stop.
+        It then calls the get_used_tokens(self, chat_id, model, response["usage"]["total_tokens"]) method
+        to calculate the used tokens for the selected model and get_text_model_usage(self, chat_id, model, used_tokens)
+        method to get the usage message.
+        It then concatenates the generated text with the current conversation and saves it back to the Redis store.
+        It returns a string containing the generated text and the usage message.
+        :param chat_id: Telegram chat id
+        :param text: Input text for the GPT-3 model
+        :param model: GPT-3 model to use
+        :return: String containing the generated text and the information about the model and token usage
+        '''
         str_conv = self.get_value(chat_id, 'conversation')
         text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < 1000 else f'{str_conv}\n{text}'[-1000:]
         max_tokens = 2048 - len(text) - 100
@@ -159,6 +297,15 @@ class DialogBot(object):
         return f'{str_response}\n\n{str_text}'
 
     def get_used_tokens(self, chat_id, model, used_tokens):
+        '''
+        It checks the model passed in and multiplies the used_tokens by a factor based on the cost per token
+        for that model, the cost per token is hardcoded.
+        It then retrieves the current number of tokens from the Redis store using the
+        get_value(self, chat_id, 'tokens') method and subtracts the used tokens from it.
+        It then saves the updated number of tokens back to the Redis store using the
+        set_value(self, chat_id, 'tokens', tokens - used_tokens) method.
+        It returns the number of tokens used.
+        '''
         if model == 'text-davinci-003':
             used_tokens = used_tokens * 20 #цена 1к токена в Давинчи 2 цента
         elif model == 'text-curie-001':
@@ -176,6 +323,13 @@ class DialogBot(object):
         return used_tokens
 
     def get_text_model_usage(self, chat_id, model, used_tokens):
+        '''
+        Returns a string containing the information about the model and token usage for the provided chat_id.
+        :param chat_id: Telegram chat id
+        :param model: GPT-3 model used
+        :param used_tokens: Number of tokens used
+        :return: String containing the information about the model and token usage
+        '''
         lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
         tokens = int(self.get_value(chat_id, 'tokens'))
         used_model = f'{s.USED_MODEL[lang]} {model}'
@@ -184,7 +338,13 @@ class DialogBot(object):
         return f'{used_model}\n{used_tokens_str}\n{remain_tokens_str}'
 
 
-def get_markup():
+def get_markup(tokens):
+    '''
+    Returns the markup for the given number of tokens
+    :param tokens: Number of tokens
+    :return: InlineKeyboardMarkup object
+    '''
+    items = []
     item1 = telegram.InlineKeyboardButton(f'GPT-3 Davinchi', callback_data=f'model#text-davinci-003')
     item2 = telegram.InlineKeyboardButton(f'GPT-3 Curie', callback_data=f'model#text-curie-001')
     item3 = telegram.InlineKeyboardButton(f'GPT-3 Babbage', callback_data=f'model#text-babbage-001')
@@ -192,7 +352,13 @@ def get_markup():
     item5 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
     item6 = telegram.InlineKeyboardButton(f'Codex Davinchi', callback_data=f'model#code-davinci-002')
     item7 = telegram.InlineKeyboardButton(f'Codex Cushman', callback_data=f'model#code-cushman-001')
-    keyboard = telegram.InlineKeyboardMarkup([[item1, item2], [item3, item4], [item6, item7], [item5]])
+    if tokens > 0:
+        items.append([item1, item2])
+        items.append([item3, item4])
+    items.append([item6, item7])
+    if tokens > 20000:
+        items.append([item5])
+    keyboard = telegram.InlineKeyboardMarkup(items)
     return keyboard
 
 
