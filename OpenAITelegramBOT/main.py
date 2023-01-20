@@ -6,7 +6,7 @@ from telegram.ext import MessageHandler, CallbackQueryHandler
 from telegram.ext import Application, CommandHandler
 import telegram
 import redis
-from settings import main as s
+import settings as s
 from dotenv import load_dotenv
 load_dotenv()
 
