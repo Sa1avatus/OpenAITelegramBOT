@@ -2,3 +2,4 @@ python-telegram-bot==20.0b0
 python-dotenv==0.20.0
 openai
 redis
+transformers

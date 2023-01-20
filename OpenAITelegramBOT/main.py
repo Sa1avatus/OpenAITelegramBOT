@@ -1,4 +1,5 @@
 import os
+import transformers
 import logging
 import openai
 from telegram.ext import filters
@@ -278,7 +279,7 @@ class DialogBot(object):
         '''
         str_conv = self.get_value(chat_id, 'conversation')
         text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < 1000 else f'{str_conv}\n{text}'[-1000:]
-        max_tokens = 2048 - len(text) - 100
+        max_tokens = 2048 - get_tokens_number(text)
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
             model=model,
@@ -360,6 +361,23 @@ def get_markup(tokens):
         items.append([item5])
     keyboard = telegram.InlineKeyboardMarkup(items)
     return keyboard
+
+
+def get_tokens_number(text):
+    '''
+    This function takes a string as input 'text' and returns the number of tokens in it.
+    It uses the 'gpt2' tokenizer from the transformers library to tokenize the input text.
+    In case of any exception, it returns the length of the input text.
+    :param text: input text
+    :return tokens_len: number of tokens in it
+    '''
+    try:
+        tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2')
+        tokenized_sentence = tokenizer.tokenize(text)
+        tokens_len = len(tokenized_sentence)
+    except Exception as e:
+        tokens_len = len(text)
+    return tokens_len
 
 
 if __name__ == "__main__":
