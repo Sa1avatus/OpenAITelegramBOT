@@ -34,3 +34,10 @@ USED_TOKENS = {'RU': f'Потрачено токенов:',
              'EN': f'Used tokens:'}
 REMAIN_TOKENS = {'RU': f'Остаток токенов:',
              'EN': f'Remain tokens:'}
+MODEL_PRICE = {'text-davinci-003': 20,
+               'text-curie-001': 2,
+               'text-babbage-001': 0.5,
+               'text-ada-001': 0.4,
+               'dalle': 20000,
+               'code-davinci-002': 0,
+               'code-cushman-001': 0}

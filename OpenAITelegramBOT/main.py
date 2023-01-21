@@ -100,8 +100,6 @@ class DialogBot(object):
         chat_id = update.message.chat_id
         self.check_user(chat_id, update)
         lang = self.get_value(chat_id, 'lang')
-        #red.flushdb() #TEST!!!
-        #self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS')) #TEST!!!
         self.set_value(chat_id, 'conversation', '')
         tokens = int(self.get_value(chat_id, 'tokens')) if int(self.get_value(chat_id, 'tokens')) > 0 else 0
         answer = s.START_MESSAGE[lang].replace('%tokens%', str(tokens))
@@ -143,7 +141,6 @@ class DialogBot(object):
                 str_value = self.chat_options[key].get(value)
         except Exception as e:
             logging.warning(e)
-            #print(f'{key}: {value}: {e}')
             str_value = None
         return str_value
 
@@ -166,7 +163,6 @@ class DialogBot(object):
                     self.chat_options[key] = {}
                 self.chat_options[key].update({value1: value2})
         except Exception as e:
-            #print(e)
             logging.warning(e)
         return None
 
@@ -248,7 +244,6 @@ class DialogBot(object):
                     answer = 'Else'
             await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=reply_markup)
         except Exception as e:
-            #print(e)
             logging.warning(e)
             await self.start_command(update.callback_query, context)
 
@@ -274,7 +269,7 @@ class DialogBot(object):
             size="1024x1024"
         )
         image_url = response['data'][0]['url']
-        used_tokens = self.get_used_tokens(chat_id, 'DALL*E', 20000)
+        used_tokens = self.get_used_tokens(chat_id, 'DALL*E', 1)
         str_text = self.get_text_model_usage(chat_id, 'DALL*E', used_tokens)
         return f'{image_url}\n\n{str_text}'
 
@@ -313,7 +308,6 @@ class DialogBot(object):
         str_response = response["choices"][0]["text"]
         str_conv = f'{str_conv}\n{str_response}'
         self.set_value(chat_id, 'conversation', str_conv)
-        #print(f'str_conv: {str_conv}')
         return f'{str_response}\n\n{str_text}'
 
     def get_used_tokens(self, chat_id, model, used_tokens):
@@ -326,18 +320,7 @@ class DialogBot(object):
         set_value(self, chat_id, 'tokens', tokens - used_tokens) method.
         It returns the number of tokens used.
         '''
-        if model == 'text-davinci-003':
-            used_tokens = used_tokens * 20 #цена 1к токена в Давинчи 2 цента
-        elif model == 'text-curie-001':
-            used_tokens = used_tokens * 2 #цена 1к токена в Curie 0.2 цента
-        elif model == 'text-babbage-001':
-            used_tokens = int(used_tokens / 2) #цена 1к токена в Babbage 0.05 цента
-        elif model == 'text-ada-001':
-            used_tokens = int(used_tokens / 2.5) #цена 1к токена в Babbage 0.04 цента
-        elif model == 'dalle':
-            used_tokens = 20000   #цена 1 картинки в ДАЛЛИ 2 цента
-        else:
-            used_tokens = used_tokens
+        used_tokens = used_tokens * s.MODEL_PRICE[model]
         tokens = int(self.get_value(chat_id, 'tokens'))
         self.set_value(chat_id, 'tokens', tokens - used_tokens)
         return used_tokens
