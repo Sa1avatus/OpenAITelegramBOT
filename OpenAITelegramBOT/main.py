@@ -48,6 +48,13 @@ class DialogBot(object):
         '''
         self.application.run_polling()
 
+    def check_user(self, chat_id, update):
+        if not self.get_value(chat_id, 'tokens'):
+            self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS'))
+        if not self.get_value(chat_id, 'user'):
+            self.set_value(chat_id, 'user', update.message.chat.username)
+        if not self.get_value(chat_id, 'lang'):
+            self.set_value(chat_id, 'lang', 'EN')
 
     async def lang_command(self, update, context):
         '''
@@ -68,7 +75,8 @@ class DialogBot(object):
         item1 = telegram.InlineKeyboardButton(f'🇷🇺 Русский', callback_data=f'lang#RU')
         item2 = telegram.InlineKeyboardButton(f'🇬🇧 English', callback_data=f'lang#EN')
         keyboard = telegram.InlineKeyboardMarkup([[item1, item2]])
-        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        self.check_user(chat_id, update)
+        lang = self.get_value(chat_id, 'lang')
         answer = s.LANG_MESSAGE.get(lang)
         await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=keyboard)
 
@@ -90,19 +98,14 @@ class DialogBot(object):
         :param context: Context object containing the context of the start command
         '''
         chat_id = update.message.chat_id
-        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        self.check_user(chat_id, update)
+        lang = self.get_value(chat_id, 'lang')
         #red.flushdb() #TEST!!!
         #self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS')) #TEST!!!
         self.set_value(chat_id, 'conversation', '')
-        if not self.get_value(chat_id, 'tokens'):
-            self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS'))
-            self.set_value(chat_id, 'user', update.message.chat.username)
-        if not self.get_value(chat_id, 'lang'):
-            await self.lang_command(update, context)
-        else:
-            tokens = int(self.get_value(chat_id, 'tokens')) if int(self.get_value(chat_id, 'tokens')) > 0 else 0
-            answer = s.START_MESSAGE[lang].replace('%tokens%', str(tokens))
-            await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup(tokens))
+        tokens = int(self.get_value(chat_id, 'tokens')) if int(self.get_value(chat_id, 'tokens')) > 0 else 0
+        answer = s.START_MESSAGE[lang].replace('%tokens%', str(tokens))
+        await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup(tokens))
 
     async def help_command(self, update, context):
         '''
@@ -118,7 +121,8 @@ class DialogBot(object):
         :param context: Context object containing the context of the help command
         '''
         chat_id = update.message.chat_id
-        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        self.check_user(chat_id, update)
+        lang = self.get_value(chat_id, 'lang')
         text = s.HELP_MESSAGE.get(lang)
         answer = f'{text}'
         await context.bot.sendMessage(chat_id=chat_id, text=answer)
@@ -138,6 +142,8 @@ class DialogBot(object):
             else:
                 str_value = self.chat_options[key].get(value)
         except Exception as e:
+            logging.warning(e)
+            #print(f'{key}: {value}: {e}')
             str_value = None
         return str_value
 
@@ -156,9 +162,12 @@ class DialogBot(object):
             if red:
                 red.hset(key, value1, value2)
             else:
+                if not self.chat_options.get(key):
+                    self.chat_options[key] = {}
                 self.chat_options[key].update({value1: value2})
         except Exception as e:
-            pass
+            #print(e)
+            logging.warning(e)
         return None
 
     async def handle_message(self, update, context):
@@ -178,7 +187,8 @@ class DialogBot(object):
         :param context: Context object containing the context of the message
         '''
         chat_id = update.message.chat_id
-        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
+        self.check_user(chat_id, update)
+        lang = self.get_value(chat_id, 'lang')
         str_conv = self.get_value(chat_id, 'conversation')
         str_conv = f'{str_conv}\n{update.message.text}'
         self.set_value(chat_id, 'conversation', str_conv)
@@ -191,9 +201,11 @@ class DialogBot(object):
                     answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
                 answer = s.NO_TOKENS[lang]
+            await context.bot.sendMessage(chat_id=chat_id, text=answer)
         except Exception as e:
+            logging.warning(e)
             return self.start_command(update, context)
-        await context.bot.sendMessage(chat_id=chat_id, text=answer)
+
 
     async def handle_callback(self, update, context):
         '''
@@ -215,24 +227,31 @@ class DialogBot(object):
         :param context: Context object containing the context of the callback query
         '''
         chat_id = update.callback_query.message.chat_id
+        self.check_user(chat_id, update.callback_query)
         reply_markup = None
-        lang = 'EN' if not self.get_value(chat_id, 'lang') else self.get_value(chat_id, 'lang')
-        tokens = int(self.get_value(chat_id, 'tokens'))
-        if tokens <= 0:
-            answer = s.NO_TOKENS[lang]
-        else:
-            if (update.callback_query.data.split('#')[0] == 'model'):
-                model = update.callback_query.data.split('#')[1]
-                self.set_value(chat_id, 'model', model)
-                answer = s.ASK_MODEL[lang]
-            elif (update.callback_query.data.split('#')[0] == 'lang'):
-                lang = update.callback_query.data.split('#')[1]
-                self.set_value(chat_id, 'lang', lang)
-                answer = s.START_MESSAGE[lang].replace('%tokens%', self.get_value(chat_id, 'tokens'))
-                reply_markup = get_markup(tokens)
+        lang = self.get_value(chat_id, 'lang')
+        try:
+            tokens = int(self.get_value(chat_id, 'tokens'))
+            if tokens <= 0:
+                answer = s.NO_TOKENS[lang]
             else:
-                answer = 'Else'
-        await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=reply_markup)
+                if (update.callback_query.data.split('#')[0] == 'model'):
+                    model = update.callback_query.data.split('#')[1]
+                    self.set_value(chat_id, 'model', model)
+                    answer = s.ASK_MODEL[lang]
+                elif (update.callback_query.data.split('#')[0] == 'lang'):
+                    lang = update.callback_query.data.split('#')[1]
+                    self.set_value(chat_id, 'lang', lang)
+                    answer = s.START_MESSAGE[lang].replace('%tokens%', self.get_value(chat_id, 'tokens'))
+                    reply_markup = get_markup(tokens)
+                else:
+                    answer = 'Else'
+            await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=reply_markup)
+        except Exception as e:
+            #print(e)
+            logging.warning(e)
+            await self.start_command(update.callback_query, context)
+
 
     def dalle_model(self, chat_id, text):
         '''
@@ -279,7 +298,7 @@ class DialogBot(object):
         '''
         str_conv = self.get_value(chat_id, 'conversation')
         text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < 1000 else f'{str_conv}\n{text}'[-1000:]
-        max_tokens = 2048 - get_tokens_number(text)
+        max_tokens = 2048 - get_tokens_number(text) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
             model=model,
@@ -376,6 +395,7 @@ def get_tokens_number(text):
         tokenized_sentence = tokenizer.tokenize(text)
         tokens_len = len(tokenized_sentence)
     except Exception as e:
+        logging.warning(e)
         tokens_len = len(text)
     return tokens_len
 
@@ -390,9 +410,11 @@ if __name__ == "__main__":
             password=os.getenv('REDIS_PASSWORD')
                           )
         red.ping()
-    except Exception as e:
+        #red.flushdb()  # TEST!!!
+    except redis.exceptions.RedisError as e:
+        logging.warning(e)
         red = None
-        print(f'REDIS Error: {e}')
+        #print(f'REDIS Error: {e}')
     token = os.getenv('BOT_TOKEN')
     dialog_bot = DialogBot(token)
     dialog_bot.start()
