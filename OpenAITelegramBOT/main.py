@@ -400,7 +400,7 @@ if __name__ == "__main__":
             password=os.getenv('REDIS_PASSWORD')
                           )
         red.ping()
-        red.flushdb()  # TEST!!!
+        #red.flushdb()  # TEST!!!
     except redis.exceptions.RedisError as e:
         logging.warning(e)
         red = None
