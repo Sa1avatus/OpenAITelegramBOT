@@ -199,7 +199,6 @@ class DialogBot(object):
             if int(self.get_value(chat_id, 'tokens')) > s.MINIMUM_TOKENS[model]:
                 if model == 'dalle':
                     answer = self.dalle_model(chat_id, update.message.text)
-                    print(answer)
                 else:
                     answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
@@ -276,7 +275,7 @@ class DialogBot(object):
             size="1024x1024"
         )
         image_url = response['data'][0]['url']
-        used_tokens = self.get_used_tokens(chat_id, 'DALL*E', 1)
+        used_tokens = self.get_used_tokens(chat_id, 'dalle', 1)
         str_text = self.get_text_model_usage(chat_id, 'DALL*E', used_tokens)
         return f'{image_url}\n\n{str_text}'
 
@@ -300,7 +299,7 @@ class DialogBot(object):
         '''
         str_conv = self.get_value(chat_id, 'conversation')
         text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < 1000 else f'{str_conv}\n{text}'[-1000:]
-        max_tokens = 2048 - get_tokens_number(text) - 100
+        max_tokens = s.MAX_MODEL_TOKENS[model] - get_tokens_number(text) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
             model=model,

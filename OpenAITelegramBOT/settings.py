@@ -9,6 +9,8 @@ GPT-3 Ada: Способен выполнять очень простые зад�
 Codex Davinchi: Самая мощная модель Кодекса. Особенно хорош в переводе естественного языка в код.\n
 Codex Cushman: Почти так же эффективен, как Davinci Codex, но немного быстрее.\n
 DALL·E: Генерация изображений.
+
+Для очистки беседы с чат-ботом, наберите /start
 ''',
                 'EN': f'''GPT-3 Davinchi: Most capable GPT-3 model. Can do any task the other models can do, often with higher quality,
 longer output and better instruction-following.\n
@@ -18,6 +20,8 @@ GPT-3 Ada: Capable of very simple tasks, usually the fastest model in the GPT-3 
 Codex Davinchi: Most capable Codex model. Particularly good at translating natural language to code.\n
 Codex Cushman: Almost as capable as Davinci Codex, but slightly faster.\n
 DALL·E: Image generation
+
+For clear conversation with chat-bot, write /start
 '''
 }
 LANG_MESSAGE = {'RU': f'Выберите язык:',
@@ -46,3 +50,9 @@ MINIMUM_TOKENS = {'text-davinci-003': 100,
                'dalle': 20000,
                'code-davinci-002': 0,
                'code-cushman-001': 0}
+MAX_MODEL_TOKENS = {'text-davinci-003': 4000,
+               'text-curie-001': 2048,
+               'text-babbage-001': 2048,
+               'text-ada-001': 2048,
+               'code-davinci-002': 4000,
+               'code-cushman-001': 2048}
