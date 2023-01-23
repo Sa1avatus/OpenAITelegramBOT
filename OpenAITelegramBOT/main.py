@@ -1,5 +1,5 @@
 import os
-import transformers
+from transformers import GPT2Tokenizer
 import logging
 import openai
 from telegram.ext import filters
@@ -49,6 +49,12 @@ class DialogBot(object):
         self.application.run_polling()
 
     def check_user(self, chat_id, update):
+        '''
+        Checking existing user parameters in cache
+        :param chat_id: user id
+        :param update: Update object containing the check_user
+        :return: None
+        '''
         if not self.get_value(chat_id, 'tokens'):
             self.set_value(chat_id, 'tokens', os.getenv('USER_TOKENS'))
         if not self.get_value(chat_id, 'user'):
@@ -140,7 +146,7 @@ class DialogBot(object):
             else:
                 str_value = self.chat_options[key].get(value)
         except Exception as e:
-            logging.warning(e)
+            logging.error(e)
             str_value = None
         return str_value
 
@@ -163,7 +169,7 @@ class DialogBot(object):
                     self.chat_options[key] = {}
                 self.chat_options[key].update({value1: value2})
         except Exception as e:
-            logging.warning(e)
+            logging.error(e)
         return None
 
     async def handle_message(self, update, context):
@@ -189,18 +195,19 @@ class DialogBot(object):
         str_conv = f'{str_conv}\n{update.message.text}'
         self.set_value(chat_id, 'conversation', str_conv)
         try:
-            if int(self.get_value(chat_id, 'tokens')) > 0:
-                model = self.get_value(chat_id, 'model')
+            model = self.get_value(chat_id, 'model')
+            if int(self.get_value(chat_id, 'tokens')) > s.MINIMUM_TOKENS[model]:
                 if model == 'dalle':
                     answer = self.dalle_model(chat_id, update.message.text)
+                    print(answer)
                 else:
                     answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
                 answer = s.NO_TOKENS[lang]
             await context.bot.sendMessage(chat_id=chat_id, text=answer)
         except Exception as e:
-            logging.warning(e)
-            return self.start_command(update, context)
+            logging.error(e)
+            await self.start_command(update, context)
 
 
     async def handle_callback(self, update, context):
@@ -228,23 +235,23 @@ class DialogBot(object):
         lang = self.get_value(chat_id, 'lang')
         try:
             tokens = int(self.get_value(chat_id, 'tokens'))
-            if tokens <= 0:
-                answer = s.NO_TOKENS[lang]
-            else:
-                if (update.callback_query.data.split('#')[0] == 'model'):
-                    model = update.callback_query.data.split('#')[1]
-                    self.set_value(chat_id, 'model', model)
-                    answer = s.ASK_MODEL[lang]
-                elif (update.callback_query.data.split('#')[0] == 'lang'):
-                    lang = update.callback_query.data.split('#')[1]
-                    self.set_value(chat_id, 'lang', lang)
-                    answer = s.START_MESSAGE[lang].replace('%tokens%', self.get_value(chat_id, 'tokens'))
-                    reply_markup = get_markup(tokens)
+            if (update.callback_query.data.split('#')[0] == 'model'):
+                model = update.callback_query.data.split('#')[1]
+                self.set_value(chat_id, 'model', model)
+                if tokens < s.MINIMUM_TOKENS[model]:
+                    answer = s.NO_TOKENS[lang]
                 else:
-                    answer = 'Else'
+                    answer = s.ASK_MODEL[lang]
+            elif (update.callback_query.data.split('#')[0] == 'lang'):
+                lang = update.callback_query.data.split('#')[1]
+                self.set_value(chat_id, 'lang', lang)
+                answer = s.START_MESSAGE[lang].replace('%tokens%', self.get_value(chat_id, 'tokens'))
+                reply_markup = get_markup(tokens)
+            else:
+                answer = 'Else'
             await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=reply_markup)
         except Exception as e:
-            logging.warning(e)
+            logging.error(e)
             await self.start_command(update.callback_query, context)
 
 
@@ -374,7 +381,7 @@ def get_tokens_number(text):
     :return tokens_len: number of tokens in it
     '''
     try:
-        tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2')
+        tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
         tokenized_sentence = tokenizer.tokenize(text)
         tokens_len = len(tokenized_sentence)
     except Exception as e:
@@ -393,11 +400,10 @@ if __name__ == "__main__":
             password=os.getenv('REDIS_PASSWORD')
                           )
         red.ping()
-        #red.flushdb()  # TEST!!!
+        red.flushdb()  # TEST!!!
     except redis.exceptions.RedisError as e:
         logging.warning(e)
         red = None
-        #print(f'REDIS Error: {e}')
     token = os.getenv('BOT_TOKEN')
     dialog_bot = DialogBot(token)
     dialog_bot.start()

@@ -21,11 +21,9 @@ DALL·E: Image generation
 '''
 }
 LANG_MESSAGE = {'RU': f'Выберите язык:',
-                'EN': f'Choose language:'
-}
-NO_TOKENS = {'RU': f'У вас закончились токены!',
-             'EN': f'You have no tokens!'
-}
+                'EN': f'Choose language:'}
+NO_TOKENS = {'RU': f'У вас недостаточно токенов для использования этой модели!',
+             'EN': f'You do not have enough tokens to use this model!'}
 ASK_MODEL = {'RU': f'Напишите, что вы хотите от модели:',
              'EN': f'Write what are want from model:'}
 USED_MODEL = {'RU': f'Использовалась модель:',
@@ -38,6 +36,13 @@ MODEL_PRICE = {'text-davinci-003': 20,
                'text-curie-001': 2,
                'text-babbage-001': 0.5,
                'text-ada-001': 0.4,
+               'dalle': 20000,
+               'code-davinci-002': 0,
+               'code-cushman-001': 0}
+MINIMUM_TOKENS = {'text-davinci-003': 100,
+               'text-curie-001': 100,
+               'text-babbage-001': 100,
+               'text-ada-001': 100,
                'dalle': 20000,
                'code-davinci-002': 0,
                'code-cushman-001': 0}
