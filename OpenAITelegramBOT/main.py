@@ -8,13 +8,15 @@ from telegram.ext import Application, CommandHandler
 import telegram
 import redis
 import settings as s
+import json
+import ast
 from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
-    filename='log_file.log',
+    #filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
+    level=logging.ERROR
 )
 
 
@@ -319,7 +321,7 @@ class DialogBot(object):
 
     def gpt3_chat_model(self, chat_id, text, model):
         max_tokens = s.MAX_MODEL_TOKENS[model] - get_tokens_number(text) - 100
-        messages = self.get_value(chat_id, 'messages') if self.get_value(chat_id, 'messages') else []
+        messages = ast.literal_eval(str(self.get_value(chat_id, 'messages'))) if self.get_value(chat_id, 'messages') else []
         messages.append({'role': 'user', 'content': text})
         response = openai.ChatCompletion.create(
             model=model,
