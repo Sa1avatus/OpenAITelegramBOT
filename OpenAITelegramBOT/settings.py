@@ -1,7 +1,9 @@
 START_MESSAGE = {'RU': f'Вам доступно %tokens% токенов.\nВыберите модель взаимодействия с ИИ (для помощи, наберите /help):',
                  'EN': f'You have %tokens% tokens.\nChoose an AI Interaction Model (write /help for help):'
 }
-HELP_MESSAGE = {'RU': f'''GPT-3 Davinchi: Самая мощная модель GPT-3.
+HELP_MESSAGE = {'RU': f'''
+GPT-3.5: Набор моделей, которые улучшают GPT-3 и могут понимать и генерировать естественный язык или код.\n
+GPT-3 Davinchi: Самая мощная модель GPT-3.
 Может выполнять любую задачу, которую могут выполнять другие модели, часто с более высоким качеством.\n
 GPT-3 Curie: Очень мощный, но быстрее и дешевле, чем Davinci.\n
 GPT-3 Babbage: Способен выполнять простые задачи, очень быстро и недорого.\n
@@ -12,7 +14,9 @@ DALL·E: Генерация изображений.
 
 Для очистки беседы с чат-ботом, наберите /start
 ''',
-                'EN': f'''GPT-3 Davinchi: Most capable GPT-3 model. Can do any task the other models can do, often with higher quality,
+'EN': f'''
+GPT-3.5: A set of models that improve on GPT-3 and can understand as well as generate natural language or code\n
+GPT-3 Davinchi: Most capable GPT-3 model. Can do any task the other models can do, often with higher quality,
 longer output and better instruction-following.\n
 GPT-3 Curie: Very capable, but faster and lower cost than Davinci.\n
 GPT-3 Babbage: Capable of straightforward tasks, very fast, and lower cost.\n
@@ -42,17 +46,20 @@ MODEL_PRICE = {'text-davinci-003': 20,
                'text-ada-001': 0.4,
                'dalle': 20000,
                'code-davinci-002': 0,
-               'code-cushman-001': 0}
+               'code-cushman-001': 0,
+               'gpt-3.5-turbo': 2,}
 MINIMUM_TOKENS = {'text-davinci-003': 100,
                'text-curie-001': 100,
                'text-babbage-001': 100,
                'text-ada-001': 100,
                'dalle': 20000,
                'code-davinci-002': 0,
-               'code-cushman-001': 0}
+               'code-cushman-001': 0,
+               'gpt-3.5-turbo': 100,   }
 MAX_MODEL_TOKENS = {'text-davinci-003': 4000,
                'text-curie-001': 2048,
                'text-babbage-001': 2048,
                'text-ada-001': 2048,
                'code-davinci-002': 4000,
-               'code-cushman-001': 2048}
+               'code-cushman-001': 2048,
+               'gpt-3.5-turbo': 4000, }

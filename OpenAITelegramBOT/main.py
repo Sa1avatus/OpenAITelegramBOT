@@ -14,7 +14,7 @@ load_dotenv()
 logging.basicConfig(
     filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.DEBUG
 )
 
 
@@ -107,6 +107,7 @@ class DialogBot(object):
         self.check_user(chat_id, update)
         lang = self.get_value(chat_id, 'lang')
         self.set_value(chat_id, 'conversation', '')
+        self.set_value(chat_id, 'messages', '')
         tokens = int(self.get_value(chat_id, 'tokens')) if int(self.get_value(chat_id, 'tokens')) > 0 else 0
         answer = s.START_MESSAGE[lang].replace('%tokens%', str(tokens))
         await context.bot.sendMessage(chat_id=chat_id, text=answer, reply_markup=get_markup(tokens))
@@ -199,6 +200,8 @@ class DialogBot(object):
             if int(self.get_value(chat_id, 'tokens')) > s.MINIMUM_TOKENS[model]:
                 if model == 'dalle':
                     answer = self.dalle_model(chat_id, update.message.text)
+                elif model == 'gpt-3.5-turbo':
+                    answer = self.gpt3_chat_model(chat_id, update.message.text, model)
                 else:
                     answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
@@ -207,7 +210,6 @@ class DialogBot(object):
         except Exception as e:
             logging.error(e)
             await self.start_command(update, context)
-
 
     async def handle_callback(self, update, context):
         '''
@@ -252,7 +254,6 @@ class DialogBot(object):
         except Exception as e:
             logging.error(e)
             await self.start_command(update.callback_query, context)
-
 
     def dalle_model(self, chat_id, text):
         '''
@@ -316,6 +317,22 @@ class DialogBot(object):
         self.set_value(chat_id, 'conversation', str_conv)
         return f'{str_response}\n\n{str_text}'
 
+    def gpt3_chat_model(self, chat_id, text, model):
+        max_tokens = s.MAX_MODEL_TOKENS[model] - get_tokens_number(text) - 100
+        messages = self.get_value(chat_id, 'messages') if self.get_value(chat_id, 'messages') else []
+        messages.append({'role': 'user', 'content': text})
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+        )
+        used_tokens = self.get_used_tokens(chat_id, model, response["usage"]["total_tokens"])
+        str_text = self.get_text_model_usage(chat_id, model, used_tokens)
+        str_response = response['choices'][0]['message']['content']
+        messages.append({'role': 'assistant', 'content': str_response})
+        self.set_value(chat_id, 'messages', messages)
+        return f'{str_response}\n\n{str_text}'
+
     def get_used_tokens(self, chat_id, model, used_tokens):
         '''
         It checks the model passed in and multiplies the used_tokens by a factor based on the cost per token
@@ -361,7 +378,9 @@ def get_markup(tokens):
     item5 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
     item6 = telegram.InlineKeyboardButton(f'Codex Davinchi', callback_data=f'model#code-davinci-002')
     item7 = telegram.InlineKeyboardButton(f'Codex Cushman', callback_data=f'model#code-cushman-001')
+    item8 = telegram.InlineKeyboardButton(f'GPT-3.5', callback_data=f'model#gpt-3.5-turbo')
     if tokens > 0:
+        items.append([item8])
         items.append([item1, item2])
         items.append([item3, item4])
     items.append([item6, item7])
