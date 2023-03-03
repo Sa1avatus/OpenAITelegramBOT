@@ -1,7 +1,6 @@
 import os
-
+from functools import wraps
 import tiktoken
-from transformers import GPT2Tokenizer
 import logging
 import openai
 from telegram.ext import filters
@@ -10,7 +9,6 @@ from telegram.ext import Application, CommandHandler
 import telegram
 import redis
 import settings as s
-import json
 import ast
 from dotenv import load_dotenv
 load_dotenv()
@@ -20,6 +18,17 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
+
+def send_typing_action(func):
+    """Sends typing action while processing func command."""
+
+    @wraps(func)
+    async def command_func(self, update, context, *args, **kwargs):
+        chat_id = update.message.chat_id
+        await context.bot.send_chat_action(chat_id=chat_id, action='typing')
+        return await func(self, update, context, *args, **kwargs)
+    return command_func
 
 
 class DialogBot(object):
@@ -177,6 +186,7 @@ class DialogBot(object):
             logging.error(e)
         return None
 
+    @send_typing_action
     async def handle_message(self, update, context):
         '''
         This method handles incoming messages that are not commands. It takes in two arguments:
@@ -400,7 +410,7 @@ def get_markup(tokens):
     item5 = telegram.InlineKeyboardButton(f'DALL·E', callback_data=f'model#dalle')
     item6 = telegram.InlineKeyboardButton(f'Codex Davinchi', callback_data=f'model#code-davinci-002')
     item7 = telegram.InlineKeyboardButton(f'Codex Cushman', callback_data=f'model#code-cushman-001')
-    item8 = telegram.InlineKeyboardButton(f'GPT-3.5', callback_data=f'model#gpt-3.5-turbo')
+    item8 = telegram.InlineKeyboardButton(f'GPT-3.5 (Chat-GPT)', callback_data=f'model#gpt-3.5-turbo')
     if tokens > 0:
         items.append([item8])
         items.append([item1, item2])
