@@ -1,4 +1,6 @@
 import os
+
+import tiktoken
 from transformers import GPT2Tokenizer
 import logging
 import openai
@@ -301,8 +303,9 @@ class DialogBot(object):
         :return: String containing the generated text and the information about the model and token usage
         '''
         str_conv = self.get_value(chat_id, 'conversation')
-        text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < 1000 else f'{str_conv}\n{text}'[-1000:]
-        max_tokens = s.MAX_MODEL_TOKENS[model] - get_tokens_number(text) - 100
+        conv_toks = int(s.MAX_MODEL_TOKENS[model] / 2)
+        text = f'{str_conv}\n{text}' if len(f'{str_conv}\n{text}') < conv_toks else f'{str_conv}\n{text}'[-conv_toks:]
+        max_tokens = s.MAX_MODEL_TOKENS[model] - get_tokens_number(text, model) - 100
         response = completion.create(
             prompt='"""\n{}\n"""'.format(text),
             model=model,
@@ -320,9 +323,19 @@ class DialogBot(object):
         return f'{str_response}\n\n{str_text}'
 
     def gpt3_chat_model(self, chat_id, text, model):
-        max_tokens = s.MAX_MODEL_TOKENS[model] - get_tokens_number(text) - 100
+        tokens_cnt = 0
+        messages_temp = []
+        conv_toks = int(s.MAX_MODEL_TOKENS[model] / 2)
         messages = ast.literal_eval(str(self.get_value(chat_id, 'messages'))) if self.get_value(chat_id, 'messages') else []
         messages.append({'role': 'user', 'content': text})
+        for message in reversed(messages):
+            tokens_cnt += get_tokens_number(message['content'], model)
+            if tokens_cnt < conv_toks:
+                messages_temp.append(message)
+            else:
+                break
+        messages = [message for message in reversed(messages_temp)]
+        max_tokens = s.MAX_MODEL_TOKENS[model] - tokens_cnt - 100
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
@@ -392,18 +405,20 @@ def get_markup(tokens):
     return keyboard
 
 
-def get_tokens_number(text):
+def get_tokens_number(text, model):
     '''
     This function takes a string as input 'text' and returns the number of tokens in it.
-    It uses the 'gpt2' tokenizer from the transformers library to tokenize the input text.
+    It uses the model tokenizer from the tiktoken library to tokenize the input text.
     In case of any exception, it returns the length of the input text.
     :param text: input text
     :return tokens_len: number of tokens in it
     '''
     try:
-        tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-        tokenized_sentence = tokenizer.tokenize(text)
-        tokens_len = len(tokenized_sentence)
+        # tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+        # tokenized_sentence = tokenizer.tokenize(text)
+        # tokens_len = len(tokenized_sentence)
+        enc = tiktoken.encoding_for_model(model)
+        tokens_len = len(enc.encode(text))
     except Exception as e:
         logging.warning(e)
         tokens_len = len(text)
