@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
-    #filename='log_file.log',
+    filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.ERROR
 )
@@ -345,7 +345,7 @@ class DialogBot(object):
         str_text = self.get_text_model_usage(chat_id, model, used_tokens)
         str_response = response['choices'][0]['message']['content']
         messages.append({'role': 'assistant', 'content': str_response})
-        self.set_value(chat_id, 'messages', messages)
+        self.set_value(chat_id, 'messages', str(messages))
         return f'{str_response}\n\n{str_text}'
 
     def get_used_tokens(self, chat_id, model, used_tokens):
