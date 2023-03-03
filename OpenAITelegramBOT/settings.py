@@ -63,4 +63,4 @@ MAX_MODEL_TOKENS = {'text-davinci-003': 4000,
                'code-davinci-002': 4000,
                'code-cushman-001': 2048,
                'gpt-3.5-turbo': 4000, }
-MESSAGE_LENGTH = 40000
+MESSAGE_LENGTH = 4000

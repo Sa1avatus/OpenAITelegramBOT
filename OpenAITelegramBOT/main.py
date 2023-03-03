@@ -18,7 +18,7 @@ load_dotenv()
 logging.basicConfig(
     filename='log_file.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.ERROR
+    level=logging.INFO
 )
 
 
@@ -211,6 +211,7 @@ class DialogBot(object):
             else:
                 answer = s.NO_TOKENS[lang]
             m_len = s.MESSAGE_LENGTH
+            logging.info(f'len(answer): {len(answer)}')
             if len(answer) > m_len:
                 cnt = int(len(answer) / m_len)
                 for i in range(cnt + 1):
