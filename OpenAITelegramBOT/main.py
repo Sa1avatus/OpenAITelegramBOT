@@ -210,7 +210,13 @@ class DialogBot(object):
                     answer = self.gpt3_model(chat_id, update.message.text, model)
             else:
                 answer = s.NO_TOKENS[lang]
-            await context.bot.sendMessage(chat_id=chat_id, text=answer)
+            m_len = s.MESSAGE_LENGTH
+            if len(answer) > m_len:
+                cnt = int(len(answer) / m_len)
+                for i in range(cnt + 1):
+                    await context.bot.sendMessage(chat_id=chat_id, text=answer[i * m_len:(i + 1) * m_len])
+            else:
+                await context.bot.sendMessage(chat_id=chat_id, text=answer)
         except Exception as e:
             logging.error(e)
             await self.start_command(update, context)
